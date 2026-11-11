@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Buildtab by DK</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#e8eae8;--surface:#f6f7f5;--ink:#1d2a31;--muted:#5d6b72;--line:#c5cbc9;--steel:#2f5d7c;--hi:#f2b705;--hi-ink:#1d2a31;--danger:#a63d2f;--ok:#2d7a4b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161d21;--surface:#1f282d;--ink:#e8ecea;--muted:#9aa8ae;--line:#34424a;--steel:#7fb0d1;--hi-ink:#161d21;--danger:#e0806f;--ok:#6fcf97}}
+:root[data-theme="dark"]{--bg:#161d21;--surface:#1f282d;--ink:#e8ecea;--muted:#9aa8ae;--line:#34424a;--steel:#7fb0d1;--hi-ink:#161d21;--danger:#e0806f;--ok:#6fcf97}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 Barlow,system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:16px}
+h1,h2,h3{font-family:'Barlow Condensed',Barlow,sans-serif;font-weight:700;margin:0;letter-spacing:.01em}
+h1{font-size:30px}h2{font-size:24px}h3{font-size:19px}
+input,textarea,button,select{font:inherit;color:inherit}
+input,textarea,select{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--steel);outline-offset:1px}
+textarea{min-height:90px;resize:vertical}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab,.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:600}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary{background:var(--hi);color:var(--hi-ink);border-color:var(--hi)}
+.main{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:820px){.main{grid-template-columns:1.15fr 1fr;align-items:start}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px}
+.main .panel{margin-bottom:0}
+.mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:13px;color:var(--muted);text-align:center;padding-bottom:2px}
+.day{aspect-ratio:1/1;min-height:44px;border:1px solid var(--line);background:var(--bg);border-radius:4px;padding:3px 4px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;font-weight:500}
+.day.empty{visibility:hidden}
+.day small{font-size:11px;color:var(--muted);line-height:1.1}
+.day.logged{border-bottom:5px solid var(--hi)}
+.day.today{box-shadow:inset 0 0 0 2px var(--steel)}
+.day.sel{background:var(--ink);color:var(--bg)}
+.day.sel small{color:var(--bg)}
+label{display:block;font-size:14px;color:var(--muted);margin:12px 0 4px}
+.row{display:grid;grid-template-columns:1fr 70px 32px;gap:6px;margin-bottom:6px}
+.row .task{grid-column:1/3}
+.mrow{display:grid;grid-template-columns:1fr 90px 32px;gap:6px;margin-bottom:6px}
+.x{border:0;background:transparent;color:var(--danger);font-size:20px;cursor:pointer;border-radius:6px}
+.tot{margin-top:10px;font-weight:600}
+.muted,.empty-msg{color:var(--muted)}
+.scroll{overflow-x:auto;margin:8px 0}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th,td{text-align:left;padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-family:'Barlow Condensed',sans-serif;font-size:17px;white-space:nowrap}
+td input,td select{min-width:70px;padding:6px 8px}
+td.n,th.n{text-align:right}
+tfoot td{font-weight:600;border-top:2px solid var(--ink)}
+.neg{color:var(--danger);font-weight:600}.pos{color:var(--ok);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 12px;background:var(--bg)}
+.add{display:flex;gap:6px;margin-top:8px}.add input{max-width:260px}
+.entry{padding:10px 0;border-bottom:1px solid var(--line)}
+.entry p{margin:2px 0 0;color:var(--muted)}
+[hidden]{display:none!important}
+.pbar{background:var(--ink);color:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:14px;border-left:8px solid var(--hi)}
+.pbar .pl{color:var(--bg);opacity:.85;font-size:13px;margin:0 0 2px;text-transform:uppercase;letter-spacing:.08em}
+.pbar .pname{font:700 clamp(26px,6vw,38px)/1.1 'Barlow Condensed',sans-serif;background:transparent;color:var(--bg);border:0;border-bottom:2px dashed var(--hi);border-radius:0;padding:2px 0;width:100%}
+.pbar .pname:focus-visible{outline:3px solid var(--hi);outline-offset:3px}
+.prow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.prow select{max-width:320px;flex:1 1 200px;color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+.stat span{display:block;font-size:13px;color:var(--muted)}
+.stat strong{font:700 22px 'Barlow Condensed',sans-serif}
+.entry p strong{color:var(--ink)}
+.pcard{display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--bg)}
+.pcard.act{border-color:var(--steel);border-left:6px solid var(--hi)}
+.pcard p{margin:2px 0 0}
+.badge{font:600 12px Barlow,sans-serif;background:var(--hi);color:var(--hi-ink);border-radius:999px;padding:2px 8px;vertical-align:middle}
+.pbtns{display:flex;gap:6px;flex-wrap:wrap}
+.stgl{list-style:none;margin:8px 0;padding:0}
+.stg{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.stg input{flex:1;min-width:120px}
+.stg .btn{padding:6px 10px}
+.stg .num{width:22px;text-align:right}
+.tblock{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 12px;border:1px solid var(--line);border-radius:8px;padding:4px 12px 12px;margin:10px 0;background:var(--bg)}
+.sig{grid-column:1/-1;margin-top:14px}
+.unsure{background:rgba(242,183,5,.2)}
+body.locked .wrap{display:none}
+#auth{display:none;min-height:100vh;align-items:center;justify-content:center;padding:16px}
+body.locked #auth{display:flex}
+.acard{background:var(--surface);border:1px solid var(--line);border-top:8px solid var(--hi);border-radius:8px;padding:20px;width:100%;max-width:380px}
+#amsg{min-height:1.4em;margin:10px 0 6px}
+</style>
+</head>
+<body class="locked">
+<div id="auth"><div class="acard">
+<h1>Buildtab <span style="font-size:.55em;font-weight:600;color:var(--muted)">by DK</span></h1>
+<p class="muted" id="amode">Sign in to open your site logs.</p>
+<div id="aemailbox"><label for="aemail">Email</label><input id="aemail" type="email" autocomplete="email"></div>
+<label id="aplabel" for="apass">Password (min 6 characters)</label><input id="apass" type="password" autocomplete="current-password">
+<p id="amsg" role="alert"></p>
+<button class="btn primary" id="agoo" style="width:100%">Sign in</button>
+<button class="btn" id="aswitch" style="width:100%;margin-top:8px">Create a new account</button>
+<button class="btn" id="aforgot" style="width:100%;margin-top:8px;border-style:dashed">Forgot password?</button>
+</div></div>
+<div class="wrap">
+<header>
+  <h1>Buildtab <span style="font-size:.55em;font-weight:600;color:var(--muted)">by DK</span></h1>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn primary" id="savebtn">Save now</button><span class="muted" id="sync" style="font-size:13px" aria-live="polite"></span><button class="btn" id="signout">Sign out</button></div>
+</header>
+<section class="pbar" aria-label="Current project">
+  <label class="pl" for="proj">Current project</label>
+  <input id="proj" class="pname" placeholder="Name your project" autocomplete="off">
+  <div class="prow"><label class="pl" for="pswitch" style="margin:0">Switch to</label><select id="pswitch"></select><button class="btn primary" id="newp">+ New project</button></div>
+</section>
+<div class="tabs" role="tablist" id="tabs" style="margin-bottom:14px">
+  <button class="tab" role="tab" data-tab="proj" aria-selected="false">Projects</button>
+  <button class="tab" role="tab" data-tab="cal" aria-selected="true">Calendar</button>
+  <button class="tab" role="tab" data-tab="boq" aria-selected="false">BOQ</button>
+  <button class="tab" role="tab" data-tab="pay" aria-selected="false">Pay</button>
+  <button class="tab" role="tab" data-tab="mat" aria-selected="false">Materials</button>
+  <button class="tab" role="tab" data-tab="sum" aria-selected="false">Summary</button>
+</div>
+
+<section id="v-cal" class="main">
+  <div class="panel">
+    <div class="mhead">
+      <button class="btn" id="prev" aria-label="Previous month">‹</button>
+      <h2 id="mtitle"></h2>
+      <button class="btn" id="next" aria-label="Next month">›</button>
+    </div>
+    <div class="grid" id="dows"></div>
+    <div class="grid" id="cells"></div>
+  </div>
+  <div class="panel" id="dayp"></div>
+</section>
+<section id="v-proj" hidden></section>
+<section id="v-boq" hidden></section>
+<section id="v-pay" hidden></section>
+<section id="v-mat" hidden></section>
+<section id="v-sum" hidden></section>
+</div>
+<datalist id="wl"></datalist>
+<datalist id="units"><option value="m"><option value="m2"><option value="m3"><option value="lm"><option value="no"><option value="kg"><option value="tonne"><option value="bag"><option value="litre"><option value="trip"><option value="item"><option value="sum"></datalist>
+
+<script>
+window.startBuildtab=function(uid){
+var KEY='site-daily-log-v1:'+uid, R={projects:[],active:null}, S={};
+function pid(){return 'p'+Date.now()+Math.floor(Math.random()*999)}
+function newProj(name){return {id:pid(),project:name||'Untitled project',days:{},workers:[],sched:[],materials:[],stages:['Foundation','Walling','Roofing','Finishing']}}
+function norm(){R.projects.forEach(function(p){p.id=p.id||pid();p.project=p.project||'Untitled project';p.days=p.days||{};p.workers=p.workers||[];p.sched=p.sched||[];p.materials=p.materials||[];p.boq=p.boq||[];p.boqInfo=p.boqInfo||{title:'',consultant:'',date:''};p.stages=p.stages||['Foundation','Walling','Roofing','Finishing'];p.sched.forEach(function(r){if(r.amt===undefined){var pd=parseFloat(r.paid)>0;r.amt=pd?r.paid:(r.due||'');r.st=pd?'paid':'planned'}r.st=r.st||'paid'})})}
+function loadRoot(o){
+  if(o&&o.projects&&o.projects.length){R=o}
+  else if(o&&typeof o==='object'&&(o.days||o.workers||o.project!==undefined)){o.id=o.id||pid();o.project=o.project||'My project';R={projects:[o],active:o.id,savedAt:o.savedAt}}
+  else{var p=newProj('My first project');R={projects:[p],active:p.id}}
+  norm();
+  S=R.projects.filter(function(p){return p.id===R.active})[0]||R.projects[0];R.active=S.id;syncBoq();
+}
+var cloud={ref:null,t:null};
+function setSync(t){var e=document.getElementById('sync');if(e)e.textContent=t}
+function cloudSave(){
+  if(!cloud.ref)return; clearTimeout(cloud.t); setSync('Saving…');
+  cloud.t=setTimeout(function(){
+    cloud.ref.set({json:JSON.stringify(R),savedAt:R.savedAt}).then(function(){setSync('All changes saved to your account')}).catch(function(){setSync('Saved on this device only')});
+  },800);
+}
+function save(){R.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}cloudSave()}
+function saveNow(){
+  R.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}
+  var t=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  if(!cloud.ref){setSync('Saved on this device at '+t);return}
+  clearTimeout(cloud.t);setSync('Saving…');
+  cloud.ref.set({json:JSON.stringify(R),savedAt:R.savedAt}).then(function(){setSync('Saved to your account at '+t)}).catch(function(){setSync('Could not reach your account. Saved on this device at '+t)});
+}
+try{var raw=localStorage.getItem(KEY);loadRoot(raw?JSON.parse(raw):null)}catch(e){loadRoot(null)}
+var $=function(i){return document.getElementById(i)};
+var MN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var now=new Date(), vy=now.getFullYear(), vm=now.getMonth(), sel=null, cur='cal';
+function iso(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+var todayIso=iso(now.getFullYear(),now.getMonth(),now.getDate());
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fm(n){var r=Math.round(n*100)/100;return (r<0?'-':'')+'₦'+Math.abs(r).toLocaleString('en-NG')}
+function num(v){var n=parseFloat(v);return isNaN(n)?0:n}
+function rec(k){var d=S.days[k]||(S.days[k]={work:'',stage:'',entries:[],mats:[]});d.mats=d.mats||[];d.stage=d.stage||'';return d}
+function hrs(k){var d=S.days[k];return d?d.entries.reduce(function(a,e){return a+num(e.hours)},0):0}
+function logged(k){var d=S.days[k];return d&&(d.work.trim()||d.entries.length||(d.mats&&d.mats.length))}
+function fmtDate(k){var p=k.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);return DN[d.getDay()]+', '+d.getDate()+' '+MN[d.getMonth()]+' '+d.getFullYear()}
+function wk(n){return S.workers.filter(function(w){return w.name===n})[0]}
+function mt(id){return S.materials.filter(function(m){return m.id===id})[0]}
+function earn(e){
+  var w=wk(e.name.trim()); if(!w||!num(w.rate))return 0;
+  var h=parseFloat(e.hours);
+  if(w.basis==='day')return (isNaN(h)||h>0)?num(w.rate):0;
+  return num(e.hours)*num(w.rate);
+}
+function usedQty(id){var t=0;Object.keys(S.days).forEach(function(k){(S.days[k].mats||[]).forEach(function(m){if(m.id===id)t+=num(m.qty)})});return t}
+function allWorkers(){var s={};S.workers.forEach(function(w){s[w.name]=1});Object.keys(S.days).forEach(function(k){S.days[k].entries.forEach(function(e){if(e.name.trim())s[e.name.trim()]=1})});return Object.keys(s).sort()}
+function syncWorkers(){var ch=false;allWorkers().forEach(function(n){if(!wk(n)){S.workers.push({name:n,trade:'',rate:'',basis:'hour'});ch=true}});if(ch)save()}
+function opts(list,sel,blank){return (blank!==undefined?'<option value="">'+esc(blank)+'</option>':'')+list.map(function(o){return '<option value="'+esc(o[0])+'"'+(o[0]===sel?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')}
+
+$('proj').addEventListener('input',function(){S.project=this.value;save();drawBar(false)});
+$('pswitch').addEventListener('change',function(){switchProject(this.value)});
+$('newp').addEventListener('click',function(){showTab('proj');var n=$('np');if(n)n.focus()});
+$('dows').innerHTML=DN.map(function(d){return '<div class="dow">'+d+'</div>'}).join('');
+
+/* ---------- Calendar + day ---------- */
+function drawCal(){
+  $('mtitle').textContent=MN[vm]+' '+vy;
+  var first=new Date(vy,vm,1).getDay(), n=new Date(vy,vm+1,0).getDate(), h='';
+  for(var i=0;i<first;i++)h+='<div class="day empty"></div>';
+  for(var d=1;d<=n;d++){
+    var k=iso(vy,vm,d), t=hrs(k), c=(S.days[k]?S.days[k].entries.length:0);
+    var cls='day'+(logged(k)?' logged':'')+(k===todayIso?' today':'')+(k===sel?' sel':'');
+    h+='<button class="'+cls+'" data-k="'+k+'" aria-label="'+fmtDate(k)+'"><span>'+d+'</span><small>'+(c?c+' w · '+t+'h':'')+'</small></button>';
+  }
+  $('cells').innerHTML=h;
+}
+$('cells').addEventListener('click',function(e){
+  var b=e.target.closest('.day[data-k]'); if(!b)return;
+  sel=b.dataset.k; drawCal(); drawDay();
+  if(window.innerWidth<820)$('dayp').scrollIntoView({behavior:'smooth'});
+});
+$('prev').onclick=function(){vm--;if(vm<0){vm=11;vy--}drawCal()};
+$('next').onclick=function(){vm++;if(vm>11){vm=0;vy++}drawCal()};
+
+function drawDay(){
+  var p=$('dayp');
+  if(!sel){p.innerHTML='<h3>Day log</h3><p class="empty-msg">Tap a date to record the work done, who was on site and materials used.</p>';return}
+  var d=rec(sel);
+  $('wl').innerHTML=allWorkers().map(function(w){return '<option value="'+esc(w)+'">'}).join('');
+  var rows=d.entries.map(function(e,i){
+    return '<div class="row" data-i="'+i+'"><input data-f="name" list="wl" placeholder="Worker name" aria-label="Worker name" value="'+esc(e.name)+'">'+
+    '<input data-f="hours" type="number" min="0" max="24" step="0.5" placeholder="Hrs" aria-label="Hours worked" value="'+esc(e.hours)+'">'+
+    '<button class="x" data-del="'+i+'" aria-label="Remove worker">×</button>'+
+    '<input class="task" data-f="task" placeholder="Task done (e.g. blockwork)" aria-label="Task done" value="'+esc(e.task)+'"></div>';
+  }).join('');
+  var mopts=S.materials.map(function(m){var r=num(m.received)-usedQty(m.id);return [m.id,(m.name||'(unnamed)')+' ('+r+(m.unit?' '+m.unit:'')+' in stock)']});
+  var mrows=d.mats.map(function(m,i){
+    var u=(mt(m.id)||{}).unit||'';
+    return '<div class="mrow" data-i="'+i+'"><select data-mf="id" aria-label="Material">'+opts(mopts,m.id,'Choose material')+'</select>'+
+    '<input data-mf="qty" type="number" min="0" step="any" placeholder="Qty" aria-label="Quantity used" value="'+esc(m.qty)+'">'+
+    '<button class="x" data-delm="'+i+'" aria-label="Remove material">×</button></div>';
+  }).join('');
+  p.innerHTML='<h3>'+fmtDate(sel)+'</h3>'+
+   '<label for="stg">Project stage</label><select id="stg">'+opts(S.stages.map(function(s){return [s,s]}),d.stage,'No stage')+'</select><button class="btn" id="editstg" style="margin-top:6px">Add, rename or remove stages</button>'+
+   '<label for="work">Work done today</label><textarea id="work" placeholder="e.g. Poured column footings, set out block wall">'+esc(d.work)+'</textarea>'+
+   '<label>Workers on site today</label>'+rosterHtml()+copyHtml()+'<div id="rows">'+(rows||'<p class="empty-msg">No workers added yet.</p>')+'</div>'+
+   '<button class="btn primary" id="addw">Add worker</button>'+
+   '<div class="tot" id="tot">Total: '+hrs(sel)+' hours</div>'+
+   '<label>Materials used</label><div id="mrows">'+(mrows||(S.materials.length?'<p class="empty-msg">None recorded.</p>':'<p class="empty-msg">Add materials in the Materials tab first.</p>'))+'</div>'+
+   (S.materials.length?'<button class="btn" id="addm">Add material used</button>':'')+'<h3 style="margin-top:16px">Day summary</h3><div id="dsum"></div>';
+  refreshDaySum();
+  $('work').addEventListener('input',function(){rec(sel).work=this.value;save();updateCell(sel)});
+  $('stg').addEventListener('change',function(){rec(sel).stage=this.value;save();refreshDaySum()});
+  $('editstg').onclick=function(){showTab('proj');var el=$('stages');if(el)el.scrollIntoView();var n=$('ns');if(n)n.focus()};
+  $('addw').onclick=function(){rec(sel).entries.push({name:'',hours:'',task:''});save();drawDay();drawCal();var r=document.querySelectorAll('#rows .row');if(r.length)r[r.length-1].querySelector('input').focus()};
+  if($('addm'))$('addm').onclick=function(){rec(sel).mats.push({id:'',qty:''});save();drawDay()};
+}
+$('dayp').addEventListener('input',function(e){
+  setTimeout(refreshDaySum,0);
+  var f=e.target.dataset.f, mf=e.target.dataset.mf, row=e.target.closest('.row,.mrow'); if(!row)return;
+  if(f){rec(sel).entries[+row.dataset.i][f]=e.target.value;save();$('tot').textContent='Total: '+hrs(sel)+' hours'}
+  else if(mf){rec(sel).mats[+row.dataset.i][mf]=e.target.value;save()}
+});
+$('dayp').addEventListener('change',function(e){if(e.target.dataset.f==='name'||e.target.dataset.f==='hours')updateCell(sel)});
+$('dayp').addEventListener('click',function(e){
+  var r=e.target.closest('[data-ros]');
+  if(r){var nm=S.workers[+r.dataset.ros].name,dd=rec(sel),ix=-1;dd.entries.forEach(function(x,i){if(ix<0&&x.name.trim()===nm)ix=i});if(ix>=0)dd.entries.splice(ix,1);else dd.entries.push({name:nm,hours:'',task:''});save();drawDay();drawCal();return}
+  if(e.target.id==='copyprev'){var pk=prevDay(),d2=rec(sel);S.days[pk].entries.forEach(function(x){if(!d2.entries.some(function(y){return y.name.trim()===x.name.trim()}))d2.entries.push({name:x.name,hours:x.hours,task:x.task})});save();drawDay();drawCal();return}
+  var b=e.target.closest('[data-del],[data-delm]'); if(!b)return;
+  if(b.dataset.del!==undefined)rec(sel).entries.splice(+b.dataset.del,1); else rec(sel).mats.splice(+b.dataset.delm,1);
+  save(); drawDay(); drawCal();
+});
+
+/* ---------- Day / project stats ---------- */
+function dayStats(k){
+  var d=S.days[k], o={hours:0,labour:0,matCost:0,workers:[],mats:[]};
+  if(!d)return o;
+  d.entries.forEach(function(e){var n=e.name.trim();if(!n)return;var a=earn(e);o.hours+=num(e.hours);o.labour+=a;o.workers.push({n:n,h:num(e.hours),a:a})});
+  (d.mats||[]).forEach(function(m){var x=mt(m.id);if(!x||!num(m.qty))return;var c=num(m.qty)*num(x.cost);o.matCost+=c;o.mats.push({n:x.name||'(unnamed)',q:num(m.qty),u:x.unit||'',c:c})});
+  return o;
+}
+function dayCard(k,nd){
+  var d=S.days[k]; if(!d||!logged(k))return '<p class="empty-msg">Nothing logged for this day yet.</p>';
+  var s=dayStats(k);
+  var head=(nd?'':'<strong>'+fmtDate(k)+'</strong> ')+(d.stage?'<span class="muted">'+(nd?'Stage: ':'· ')+esc(d.stage)+'</span>':'');
+  return '<div class="entry">'+head+'<p>'+esc(d.work||'No work summary written')+'</p>'+
+   (s.workers.length?'<p>Workers: '+s.workers.map(function(w){return esc(w.n)+' ('+w.h+'h'+(w.a?', '+fm(w.a):'')+')'}).join('; ')+'</p>':'')+
+   (s.mats.length?'<p>Materials: '+s.mats.map(function(m){return esc(m.n)+' '+m.q+(m.u?' '+esc(m.u):'')}).join('; ')+'</p>':'')+
+   '<p><strong>'+s.hours+' h · labour '+fm(s.labour)+' · materials '+fm(s.matCost)+(dayPaid(k)?' · paid '+fm(dayPaid(k)):'')+'</strong></p></div>';
+}
+function updateCell(k){var el=document.querySelector('.day[data-k="'+k+'"]');if(!el)return;var t=hrs(k),c=S.days[k]?S.days[k].entries.length:0;el.querySelector('small').textContent=c?c+' w · '+t+'h':'';el.classList.toggle('logged',!!logged(k))}
+function rosterHtml(){
+  syncWorkers();
+  if(!S.workers.length)return '<p class="muted" style="margin:4px 0">Add workers below. Once they exist, you can tap names here to mark who is on site each day.</p>';
+  var on={}; rec(sel).entries.forEach(function(e){on[e.name.trim()]=1});
+  return '<p class="muted" style="margin:0 0 6px;font-size:14px">Tap a name to add or remove them for this day only. Other days are not affected.</p><div class="chips">'+S.workers.map(function(w,i){var a=!!on[w.name];return '<button type="button" class="btn" data-ros="'+i+'" aria-pressed="'+a+'" style="'+(a?'background:var(--ink);color:var(--bg);border-color:var(--ink)':'')+'">'+(a?'✓ ':'')+esc(w.name)+(w.trade?' · '+esc(w.trade):'')+'</button>'}).join('')+'</div>';
+}
+function prevDay(){var ks=Object.keys(S.days).filter(function(k){return k<sel&&S.days[k].entries.length}).sort();return ks.length?ks[ks.length-1]:null}
+function copyHtml(){var k=prevDay();return k?'<button type="button" class="btn" id="copyprev" style="margin:6px 0">Copy workers from '+fmtDate(k)+'</button>':''}
+function refreshDaySum(){var el=$('dsum');if(el&&sel)el.innerHTML=dayCard(sel,true)}
+function projTotals(){
+  var ks=Object.keys(S.days).filter(logged).sort(), t={days:ks.length,hours:0,labour:0,matCost:0,first:ks[0],last:ks[ks.length-1]};
+  ks.forEach(function(k){var x=dayStats(k);t.hours+=x.hours;t.labour+=x.labour;t.matCost+=x.matCost});
+  t.paid=S.sched.reduce(function(a,r){return a+paidOf(r)},0);
+  return t;
+}
+function pstats(p){var keep=S;S=p;var t=projTotals();S=keep;return t}
+
+/* ---------- Projects tab ---------- */
+var pendingProj=null, pendingStage=null;
+function drawBar(setInput){
+  $('pswitch').innerHTML=R.projects.map(function(p){return '<option value="'+esc(p.id)+'"'+(p.id===R.active?' selected':'')+'>'+esc(p.project||'Untitled project')+'</option>'}).join('');
+  if(setInput)$('proj').value=S.project||'';
+}
+function switchProject(id){
+  var p=R.projects.filter(function(x){return x.id===id})[0]; if(!p)return;
+  R.active=id;S=p;sel=todayIso;payDate=null;payExtra={};scan=null;scanMsg='';scanRepConf=false;syncBoq();pendingDel=null;pendingStage=null;pendingProj=null;vy=now.getFullYear();vm=now.getMonth();
+  save();refreshAll();
+}
+function delProject(id){
+  if(R.projects.length<2)return;
+  R.projects=R.projects.filter(function(p){return p.id!==id});pendingProj=null;
+  if(R.active===id)switchProject(R.projects[0].id); else{save();drawBar(false);drawProj()}
+}
+function stageUse(s){return Object.keys(S.days).filter(function(k){return S.days[k].stage===s}).length}
+function removeStage(i){var s=S.stages[i];Object.keys(S.days).forEach(function(k){if(S.days[k].stage===s)S.days[k].stage=''});S.stages.splice(i,1);pendingStage=null;save();drawProj()}
+function drawProj(){
+  var rows=R.projects.map(function(p,i){var t=pstats(p),act=p.id===R.active;
+    return '<div class="pcard'+(act?' act':'')+'"><div><h3>'+esc(p.project||'Untitled project')+(act?' <span class="badge">Current</span>':'')+'</h3><p class="muted">'+t.days+' days logged · '+t.hours+' hours · '+p.workers.length+' workers · labour '+fm(t.labour)+' · materials '+fm(t.matCost)+'</p></div><div class="pbtns">'+
+    (act?'':'<button class="btn" data-open="'+i+'">Open</button>')+
+    (R.projects.length>1?(pendingProj===p.id?'<button class="btn" data-confdelp="'+i+'">Delete project and its data</button><button class="btn" data-cancelp="1">Cancel</button>':'<button class="btn" data-delp="'+i+'">Delete</button>'):'')+'</div></div>'}).join('');
+  var stg=S.stages.map(function(s,i){var used=stageUse(s);
+    return '<li class="stg"><span class="muted num">'+(i+1)+'</span><input data-stage="'+i+'" value="'+esc(s)+'" aria-label="Stage '+(i+1)+' name">'+
+    '<button class="btn" data-mv="'+i+':-1" aria-label="Move stage up"'+(i?'':' disabled')+'>↑</button><button class="btn" data-mv="'+i+':1" aria-label="Move stage down"'+(i<S.stages.length-1?'':' disabled')+'>↓</button>'+
+    (pendingStage===i?'<button class="btn" data-confdels="'+i+'">Remove (used on '+used+' day'+(used===1?'':'s')+')</button><button class="btn" data-canceldels="1">Cancel</button>':'<button class="x" data-dels="'+i+'" aria-label="Remove stage '+esc(s)+'">×</button>')+'</li>'}).join('');
+  $('v-proj').innerHTML=
+   '<div class="panel"><h2>Your projects</h2><p class="muted">Each project keeps its own calendar, workers, pay, materials and stages. Rename the current project in the bar above.</p>'+rows+
+   '<div class="add"><input id="np" placeholder="New project name" aria-label="New project name"><button class="btn primary" id="addp">Create project</button></div></div>'+
+   '<div class="panel" id="stages"><h2>Stages for “'+esc(S.project||'this project')+'”</h2><p class="muted">Edit a name to rename a stage. The order sets how cumulative totals build up in the summary.</p><ul class="stgl">'+(stg||'<li class="empty-msg">No stages yet.</li>')+'</ul>'+
+   '<div class="add"><input id="ns" placeholder="New stage name" aria-label="New stage name"><button class="btn" id="addstage">Add stage</button></div></div>';
+}
+
+/* ---------- Pay tab ---------- */
+function paidOf(r){return r.st==='paid'?num(r.amt):0}
+function dayPaid(k){return S.sched.reduce(function(a,r){return a+(r.date===k?paidOf(r):0)},0)}
+function dailyRows(){
+  var map={};
+  Object.keys(S.days).filter(logged).forEach(function(k){map[k]={k:k,earned:dayStats(k).labour,paid:0,who:[]}});
+  S.sched.forEach(function(r){var a=paidOf(r);if(!a)return;var k=r.date||'';var m=map[k]||(map[k]={k:k,earned:0,paid:0,who:[]});m.paid+=a;m.who.push({n:r.worker||'Unassigned',a:a})});
+  var cum=0;
+  return Object.keys(map).sort().map(function(k){var m=map[k];cum+=m.paid;m.cum=cum;return m});
+}
+function workerCum(){
+  var W={}, ua=0;
+  S.workers.forEach(function(w){W[w.name]={n:w.name,trade:w.trade||'',days:0,earned:0,paid:0}});
+  Object.keys(S.days).forEach(function(k){var seen={};S.days[k].entries.forEach(function(e){var n=e.name.trim();if(!n)return;var w=W[n]||(W[n]={n:n,trade:'',days:0,earned:0,paid:0});if(!seen[n]){seen[n]=1;w.days++}w.earned+=earn(e)})});
+  S.sched.forEach(function(r){var a=paidOf(r);if(!a)return;if(r.worker&&W[r.worker])W[r.worker].paid+=a;else ua+=a});
+  var rows=Object.keys(W).sort().map(function(n){var w=W[n];w.bal=w.earned-w.paid;return w});
+  return {rows:rows,unassigned:ua};
+}
+function dailyPayHtml(){
+  var rows=dailyRows(); if(!rows.length)return '<p class="empty-msg">Nothing yet. Log days in the calendar and add payments above.</p>';
+  var tE=0,tP=0;
+  return '<table><tr><th>Date</th><th class="n">Earned</th><th class="n">Paid</th><th>Paid to</th><th class="n">Total paid so far</th></tr>'+
+   rows.map(function(m){tE+=m.earned;tP+=m.paid;return '<tr><td>'+(m.k?fmtDate(m.k):'No date')+'</td><td class="n">'+fm(m.earned)+'</td><td class="n">'+(m.paid?fm(m.paid):'–')+'</td><td>'+(m.who.length?esc(m.who.map(function(w){return w.n+' '+fm(w.a)}).join(', ')):'–')+'</td><td class="n">'+fm(m.cum)+'</td></tr>'}).join('')+
+   '<tfoot><tr><td>Total</td><td class="n">'+fm(tE)+'</td><td class="n">'+fm(tP)+'</td><td></td><td></td></tr></tfoot></table>';
+}
+function cumHtml(){
+  var C=workerCum(); if(!C.rows.length&&!C.unassigned)return '<p class="empty-msg">No workers yet.</p>';
+  var d=0,e=0,p=0;
+  var body=C.rows.map(function(w){d+=w.days;e+=w.earned;p+=w.paid;return '<tr><td>'+esc(w.n)+(w.trade?'<br><span class="muted">'+esc(w.trade)+'</span>':'')+'</td><td class="n">'+w.days+'</td><td class="n">'+fm(w.earned)+'</td><td class="n">'+fm(w.paid)+'</td><td class="n '+(w.bal>0?'neg':'pos')+'">'+fm(w.bal)+'</td></tr>'}).join('');
+  if(C.unassigned){p+=C.unassigned;body+='<tr><td>Payments with no worker chosen</td><td class="n">–</td><td class="n">–</td><td class="n">'+fm(C.unassigned)+'</td><td></td></tr>'}
+  return '<table><tr><th>Worker</th><th class="n">Days on site</th><th class="n">Total earned</th><th class="n">Amount paid</th><th class="n">Balance owed</th></tr>'+body+'<tfoot><tr><td>Total</td><td class="n">'+d+'</td><td class="n">'+fm(e)+'</td><td class="n">'+fm(p)+'</td><td class="n">'+fm(e-p)+'</td></tr></tfoot></table>';
+}
+var payDate=null, payExtra={};
+function shortDate(k){if(!k)return 'No date';var q=k.split('-');return (+q[2])+' '+MN[+q[1]-1].slice(0,3)}
+function payRows(date){
+  var names=[],seen={};
+  function add(n){if(n&&!seen[n]){seen[n]=1;names.push(n)}}
+  var d=S.days[date]; if(d)d.entries.forEach(function(e){add(e.name.trim())});
+  S.sched.forEach(function(r){if(r.date===date&&paidOf(r))add(r.worker)});
+  (payExtra[date]||[]).forEach(add);
+  return names;
+}
+function paidOn(date,n){return S.sched.reduce(function(a,r){return a+(r.date===date&&r.worker===n?paidOf(r):0)},0)}
+function onDay(date,n){var d=S.days[date],h=0,on=false,t=0;if(d)d.entries.forEach(function(e){if(e.name.trim()===n){on=true;h+=num(e.hours);t+=earn(e)}});return {on:on,h:h,earned:t}}
+function balanceTo(date,n){
+  var e=0,p=0;
+  Object.keys(S.days).forEach(function(k){if(k<=date)e+=onDay(k,n).earned});
+  S.sched.forEach(function(r){if(r.worker===n&&r.date&&r.date<=date)p+=paidOf(r)});
+  return e-p;
+}
+function setPay(date,n,v){
+  S.sched=S.sched.filter(function(r){return !(r.date===date&&r.worker===n&&r.st==='paid')});
+  var a=num(v); if(a>0)S.sched.push({date:date,worker:n,amt:String(a),st:'paid'});
+}
+function payRecHtml(){
+  var date=payDate, names=payRows(date);
+  var extra=S.workers.filter(function(w){return names.indexOf(w.name)<0}).map(function(w){return [w.name,w.name]});
+  var rows=names.map(function(n){var o=onDay(date,n),pd=paidOn(date,n);
+    return '<tr><td>'+esc(n)+'</td><td>'+(o.on?(o.h?o.h+' h':'✓'):'–')+'</td><td class="n">'+fm(o.earned)+'</td>'+
+     '<td><input type="number" min="0" step="any" data-pw="'+esc(n)+'" value="'+(pd||'')+'" placeholder="0" aria-label="Amount paid to '+esc(n)+' on this day"></td>'+
+     '<td class="n" data-bal="'+esc(n)+'">'+fm(balanceTo(date,n))+'</td></tr>'}).join('');
+  return '<label for="paydate" style="margin-top:0">Pay date</label><input type="date" id="paydate" value="'+esc(date)+'" style="max-width:220px">'+
+   '<div class="scroll"><table><tr><th>Worker</th><th>On site</th><th class="n">Earned that day</th><th>Paid that day (₦)</th><th class="n">Balance owed to date</th></tr>'+
+   (rows||'<tr><td colspan="5" class="empty-msg">No one is logged on this date. Add a worker below to record a payment.</td></tr>')+'</table></div>'+
+   (extra.length?'<div class="add" style="flex-wrap:wrap"><select id="payextra" aria-label="Add another worker to this date" style="max-width:260px">'+opts(extra,'','Add another worker…')+'</select><button class="btn" id="payaddw">Add to this date</button></div>':(S.workers.length?'':'<p class="muted">Add workers above or log them in the calendar first.</p>'));
+}
+function matrixHtml(){
+  var cell={},ds={},ws={};
+  S.sched.forEach(function(r){var a=paidOf(r);if(!a)return;var k=r.date||'',n=r.worker||'Unassigned';ds[k]=1;ws[n]=1;(cell[n]=cell[n]||{})[k]=((cell[n]||{})[k]||0)+a});
+  var ks=Object.keys(ds).sort(), ns=Object.keys(ws).sort();
+  if(!ns.length)return '<p class="empty-msg">No payments recorded yet.</p>';
+  var colT={},gt=0;
+  var body=ns.map(function(n){var t=0;var tds=ks.map(function(k){var a=cell[n][k]||0;t+=a;colT[k]=(colT[k]||0)+a;return '<td class="n">'+(a?fm(a):'–')+'</td>'}).join('');gt+=t;return '<tr><td>'+esc(n)+'</td>'+tds+'<td class="n"><strong>'+fm(t)+'</strong></td></tr>'}).join('');
+  return '<table><tr><th>Worker</th>'+ks.map(function(k){return '<th class="n">'+shortDate(k)+'</th>'}).join('')+'<th class="n">Total paid</th></tr>'+body+
+   '<tfoot><tr><td>Total</td>'+ks.map(function(k){return '<td class="n">'+fm(colT[k]||0)+'</td>'}).join('')+'<td class="n">'+fm(gt)+'</td></tr></tfoot></table>';
+}
+function refreshPay(){
+  var P=S.sched.reduce(function(a,r){return a+paidOf(r)},0);
+  if($('paytot'))$('paytot').textContent='Paid on '+fmtDate(payDate)+': '+fm(dayPaid(payDate))+' · Total paid so far: '+fm(P);
+  document.querySelectorAll('[data-bal]').forEach(function(el){el.textContent=fm(balanceTo(payDate,el.dataset.bal))});
+  if($('paymatrix'))$('paymatrix').innerHTML=matrixHtml();
+  if($('paydaily'))$('paydaily').innerHTML=dailyPayHtml();
+  if($('paycum'))$('paycum').innerHTML=cumHtml();
+}
+var pendingDel=null;
+function removeWorker(n){
+  S.workers=S.workers.filter(function(w){return w.name!==n});
+  Object.keys(S.days).forEach(function(k){S.days[k].entries=S.days[k].entries.filter(function(e){return e.name.trim()!==n})});
+  S.sched.forEach(function(r){if(r.worker===n)r.worker=''});
+  pendingDel=null;save();
+}
+function drawPay(){
+  syncWorkers(); if(!payDate)payDate=sel||todayIso;
+  var wr=S.workers.map(function(w,i){return '<tr><td>'+esc(w.name)+'</td>'+
+    '<td><input data-p="workers.'+i+'.trade" value="'+esc(w.trade)+'" placeholder="e.g. Bricklayer" aria-label="Trade"></td>'+
+    '<td><input type="number" min="0" step="any" data-p="workers.'+i+'.rate" value="'+esc(w.rate)+'" placeholder="Rate" aria-label="Rate"></td>'+
+    '<td><select data-p="workers.'+i+'.basis" aria-label="Paid per"><option value="hour"'+(w.basis==='hour'?' selected':'')+'>per hour</option><option value="day"'+(w.basis==='day'?' selected':'')+'>per day</option></select></td><td style="white-space:nowrap">'+(pendingDel===w.name?'<button class="btn" data-confirmdel="'+i+'">Remove and delete their logs</button> <button class="btn" data-canceldel="1">Cancel</button>':'<button class="x" data-delwk="'+i+'" aria-label="Remove '+esc(w.name)+'">×</button>')+'</td></tr>'}).join('');
+  var names=S.workers.map(function(w){return [w.name,w.name]});
+  
+  $('v-pay').innerHTML=
+   '<div class="panel"><h2>Workers and rates</h2><p class="muted">Earnings = hours × rate (or days × rate). Workers you log on the calendar appear here automatically. Removing a worker here removes them from every day; to take someone off a single day, use the calendar.</p>'+
+   '<div class="scroll"><table><tr><th>Worker</th><th>Trade</th><th>Rate (₦)</th><th>Paid</th><th></th></tr>'+(wr||'<tr><td colspan="5" class="empty-msg">No workers yet.</td></tr>')+'</table></div>'+
+   '<div class="add"><input id="nw" placeholder="New worker name" aria-label="New worker name"><button class="btn" id="addwk">Add worker</button></div></div>'+
+   '<div class="panel"><h2>Pay workers by day</h2><p class="muted">Pick a date, then enter what each worker was paid on that day. Leave blank if nothing was paid. Workers logged on that date in the calendar appear automatically.</p>'+payRecHtml()+'<div class="tot" id="paytot"></div></div>'+
+   '<div class="panel"><h2>Payments by worker and day</h2><div class="scroll" id="paymatrix"></div></div>'+
+   '<div class="panel"><h2>Paid per day</h2><p class="muted">What was earned and what was paid on each date, with the running total paid.</p><div class="scroll" id="paydaily"></div></div>'+
+   '<div class="panel"><h2>Cumulative by worker</h2><p class="muted">Days on site, total earned so far, amount paid, and what is still owed.</p><div class="scroll" id="paycum"></div></div>';
+  refreshPay();
+}
+
+/* ---------- Materials tab ---------- */
+function boqOf(m){return m.boqId?S.boq.filter(function(b){return b.id===m.boqId})[0]:null}
+function syncBoq(){
+  var ids={};
+  S.boq.forEach(function(b){
+    if(b.h||!b.mat||!(b.desc||'').trim())return;
+    ids[b.id]=1;
+    var m=S.materials.filter(function(x){return x.boqId===b.id})[0];
+    if(!m){m={id:pid(),boqId:b.id,name:'',unit:'',cost:'',received:''};S.materials.push(m)}
+    m.name=b.desc;m.unit=b.unit||'';m.cost=b.rate||'';
+  });
+  S.materials=S.materials.filter(function(m){
+    if(!m.boqId||ids[m.boqId])return true;
+    if(num(m.received)||usedQty(m.id)){m.boqId='';return true}
+    return false;
+  });
+}
+function refreshMat(){
+  var tot=0;
+  S.materials.forEach(function(m,i){var u=usedQty(m.id),r=num(m.received)-u,b=boqOf(m);
+    if($('us'+i))$('us'+i).textContent=u;
+    if($('rm'+i)){$('rm'+i).textContent=r;$('rm'+i).className='n'+(r<0?' neg':'')}
+    if($('to'+i))$('to'+i).textContent=b?Math.max(0,num(b.qty)-num(m.received)):'–';
+    tot+=u*num(m.cost)});
+  if($('mtot'))$('mtot').textContent='Cost of materials used: '+fm(tot);
+}
+function drawMat(){
+  syncBoq();
+  var r=S.materials.map(function(m,i){var b=boqOf(m);
+    return '<tr><td>'+(b?esc(m.name)+' <span class="badge">BOQ</span>':'<input data-p="materials.'+i+'.name" value="'+esc(m.name)+'" placeholder="e.g. Cement" aria-label="Material">')+'</td>'+
+     '<td>'+(b?esc(m.unit):'<input data-p="materials.'+i+'.unit" value="'+esc(m.unit)+'" placeholder="bags" aria-label="Unit">')+'</td>'+
+     '<td>'+(b?fm(num(m.cost)):'<input type="number" min="0" step="any" data-p="materials.'+i+'.cost" value="'+esc(m.cost)+'" placeholder="₦" aria-label="Cost per unit">')+'</td>'+
+     '<td class="n">'+(b?esc(b.qty||0):'–')+'</td>'+
+     '<td><input type="number" min="0" step="any" data-p="materials.'+i+'.received" value="'+esc(m.received)+'" placeholder="Qty" aria-label="Quantity received"></td>'+
+     '<td class="n" id="us'+i+'"></td><td class="n" id="rm'+i+'"></td><td class="n" id="to'+i+'"></td>'+
+     '<td>'+(b?'':'<button class="x" data-delmat="'+i+'" aria-label="Remove material">×</button>')+'</td></tr>'}).join('');
+  $('v-mat').innerHTML='<div class="panel"><h2>Materials in store</h2><p class="muted">Items from your BOQ appear here automatically (marked BOQ). Record what has been received on site. Whatever you log as used on each day in the calendar is deducted, so “In stock” is always what is left, and “Still to order” is the BOQ quantity minus what has been received.</p>'+
+   '<div class="pbtns" style="margin-bottom:8px"><button class="btn" id="gotoboq">Open BOQ</button><button class="btn primary" id="matpdf">Download materials as PDF</button></div><p class="muted" id="matmsg" aria-live="polite"></p>'+
+   '<div class="scroll"><table style="min-width:760px"><tr><th>Material</th><th>Unit</th><th>Cost per unit (₦)</th><th class="n">BOQ qty</th><th>Received</th><th class="n">Used</th><th class="n">In stock</th><th class="n">Still to order</th><th></th></tr>'+
+   (r||'<tr><td colspan="9" class="empty-msg">No materials yet. Add items to the BOQ, or add one below.</td></tr>')+'</table></div>'+
+   '<button class="btn primary" id="addmat">Add material</button><div class="tot" id="mtot"></div></div>';
+  refreshMat();
+}
+
+/* ---------- BOQ tab ---------- */
+function refreshBoq(){
+  var t=0,m=0;
+  S.boq.forEach(function(b,i){if(b.h)return;var a=num(b.qty)*num(b.rate);t+=a;if(b.mat&&(b.desc||'').trim())m++;var el=$('ba'+i);if(el)el.textContent=fm(a)});
+  if($('boqtot'))$('boqtot').textContent=fm(t);
+  if($('boqinfo'))$('boqinfo').textContent=m+' material item'+(m===1?'':'s')+' shown in the Materials tab';
+}
+function drawBoq(){
+  var n=0, I=S.boqInfo||(S.boqInfo={title:'',consultant:'',date:''});
+  var rows=S.boq.map(function(b,i){
+    var del='<button class="x" data-delb="'+i+'" aria-label="Remove line">×</button>';
+    if(b.h)return '<tr><td></td><td colspan="6"><input data-p="boq.'+i+'.desc" value="'+esc(b.desc)+'" placeholder="Section heading, e.g. Substructure" aria-label="Section heading" style="font-weight:700"></td><td>'+del+'</td></tr>';
+    n++;
+    return '<tr><td>'+n+'</td><td><input data-p="boq.'+i+'.desc" value="'+esc(b.desc)+'" placeholder="Description of item" aria-label="Description"></td>'+
+     '<td><input data-p="boq.'+i+'.unit" list="units" value="'+esc(b.unit)+'" style="width:80px" aria-label="Unit"></td>'+
+     '<td><input type="number" min="0" step="any" data-p="boq.'+i+'.qty" value="'+esc(b.qty)+'" style="width:90px" aria-label="Quantity"></td>'+
+     '<td><input type="number" min="0" step="any" data-p="boq.'+i+'.rate" value="'+esc(b.rate)+'" style="width:110px" aria-label="Rate"></td>'+
+     '<td class="n" id="ba'+i+'"></td>'+
+     '<td style="text-align:center"><input type="checkbox" data-p="boq.'+i+'.mat"'+(b.mat?' checked':'')+' style="width:22px;height:22px;min-width:0" aria-label="Counts as a material"></td><td>'+del+'</td></tr>';
+  }).join('');
+  $('v-boq').innerHTML='<div class="panel" id="scanpanel"></div>'+
+   '<div class="panel"><h2>Bill of quantities</h2><p class="muted">'+esc(S.project||'Untitled project')+'. List each item with its unit, quantity and rate. Items ticked as Material appear in the Materials tab automatically, so you can track what is received, used and still to order.</p>'+
+   '<div class="tblock"><div><label for="bi-title">Title</label><input id="bi-title" data-p="boqInfo.title" value="'+esc(I.title)+'" placeholder="e.g. Proposed 4-bedroom duplex, Asaba"></div>'+
+   '<div><label for="bi-cons">BOQ consultant</label><input id="bi-cons" data-p="boqInfo.consultant" value="'+esc(I.consultant)+'" placeholder="Name of consultant or firm"></div>'+
+   '<div><label for="bi-date">Date</label><input type="date" id="bi-date" data-p="boqInfo.date" value="'+esc(I.date)+'"></div>'+
+   '<div class="sig"><div style="height:64px;border-bottom:2px solid var(--ink)"></div><span class="muted" style="font-size:13px">Signature (space is left on the PDF)</span></div></div>'+
+   '<div class="scroll"><table style="min-width:700px"><tr><th>No.</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate (₦)</th><th class="n">Amount</th><th>Material</th><th></th></tr>'+
+   (rows||'<tr><td colspan="8" class="empty-msg">No items yet. Add a section heading or an item.</td></tr>')+
+   '<tfoot><tr><td colspan="5">Total</td><td class="n" id="boqtot"></td><td colspan="2"></td></tr></tfoot></table></div>'+
+   '<div class="pbtns" style="margin-top:10px"><button class="btn primary" id="addboq">Add item</button><button class="btn" id="addhead">Add section heading</button><button class="btn" id="boqpdf">Download BOQ as PDF</button></div>'+
+   '<p class="muted" id="boqmsg" aria-live="polite"></p><div class="tot" id="boqinfo"></div></div>';
+  refreshBoq();renderScan();
+}
+/* ---------- Existing BOQ upload ---------- */
+var scan=null, scanInfo={}, scanMsg='', scanBusy=false, scanCtl=null, scanRepConf=false;
+var JSPEC='Reply with ONLY this JSON and nothing else: {"title":string|null,"consultant":string|null,"date":"YYYY-MM-DD"|null,"lines":[{"kind":"heading"|"item","desc":string,"unit":string|null,"qty":number|null,"rate":number|null,"unsure":boolean}]}. Rules: section titles such as SUBSTRUCTURE or ROOFING are kind "heading". Keep item descriptions as written, correcting only obvious spelling. Write units in short standard form such as m, m2, m3, lm, no, kg, bag, tonne, litre, trip, item, sum. Naira amounts: ignore currency symbols and thousands separators. Never invent numbers: use null for anything missing or illegible and set unsure to true for any line you are not confident about. If a line gives only a quantity and a total amount, work out the rate. Do not return totals, subtotals, carried-forward or brought-forward lines, summary or collection pages, or page numbers as lines.';
+var IMG_PROMPT='You are reading a photo, scan or screenshot of a Bill of Quantities (BOQ) for a construction project in Nigeria. It may be typed or handwritten. Extract every line in the order written. '+JSPEC;
+function txtPrompt(label,i,n,text){return 'You are reading a Bill of Quantities (BOQ) for a construction project in Nigeria. Below is text extracted from a typed file ('+label+', part '+i+' of '+n+'). Columns are separated by " | " and rows may be broken or misaligned. Section headings from earlier parts may not be repeated. Extract every line in the order given. '+JSPEC+'\n\n--- BOQ TEXT ---\n'+text}
+var PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', PDFW='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js', XLSXJS='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function loadLib(url,get){
+  return new Promise(function(res,rej){
+    if(get())return res(get());
+    var el=document.createElement('script'); el.src=url;
+    el.onload=function(){get()?res(get()):rej({code:'lib'})}; el.onerror=function(){rej({code:'lib'})};
+    document.head.appendChild(el);
+  });
+}
+function scanNum(v){if(v===null||v===undefined||v==='')return '';var n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?'':String(n)}
+function scanErr(e){
+  var c=e&&e.code;
+  return {unavailable:'Reading files only works inside claude.ai.',images_unavailable:'Reading images is not available in this view. Open the page in claude.ai.',
+   not_granted:'Permission to use Claude was declined, so the file could not be read.',rate_limited:'Too many requests just now. Please wait a little and try again.',
+   image_rejected:'That image could not be used. Try a JPEG or PNG.',
+   invalid_json:'Part of the BOQ could not be read cleanly. Try again, or upload a smaller part of it.',cancelled:'Stopped.',
+   session_expired:'Please sign in to claude.ai again and retry.',refused:'The file could not be processed. Try a clearer copy.',
+   lib:'The file reader could not be loaded. Check your connection and try again.',unsupported:'That file type is not supported. Use a PDF, Excel (.xlsx or .xls), CSV, or a photo or screenshot. For Word files, save as PDF first.',
+   badfile:'That file could not be opened. It may be damaged or password protected.'}[c]||'Something went wrong reading the file. Please try again.';
+}
+function fileKind(f){
+  var n=(f.name||'').toLowerCase(), t=f.type||'';
+  if(/^image\//.test(t))return 'image';
+  if(t==='application/pdf'||/\.pdf$/.test(n))return 'pdf';
+  if(/\.(xlsx|xls)$/.test(n))return 'xls';
+  if(/\.csv$/.test(n)||t==='text/csv')return 'csv';
+  return '';
+}
+function chunkText(t,max){var out=[],cur='';t.split('\n').forEach(function(l){if(cur.length+l.length+1>max&&cur){out.push(cur);cur=''}cur+=l+'\n'});if(cur.trim())out.push(cur);return out}
+async function sheetText(file){
+  var X=await loadLib(XLSXJS,function(){return window.XLSX}), out=[];
+  try{
+    var wb=X.read(new Uint8Array(await file.arrayBuffer()),{type:'array'});
+    wb.SheetNames.forEach(function(n){var csv=X.utils.sheet_to_csv(wb.Sheets[n],{FS:' | ',blankrows:false});if(csv.trim())out.push('Sheet: '+n+'\n'+csv)});
+  }catch(e){throw {code:'badfile'}}
+  return out.join('\n\n');
+}
+async function pdfRead(buf){
+  var lib=await loadLib(PDFJS,function(){return window.pdfjsLib});
+  lib.GlobalWorkerOptions.workerSrc=PDFW;
+  var doc; try{doc=await lib.getDocument({data:new Uint8Array(buf),isEvalSupported:false}).promise}catch(e){throw {code:'badfile'}}
+  var pages=[], total=0;
+  for(var p=1;p<=doc.numPages;p++){
+    var pg=await doc.getPage(p), tc=await pg.getTextContent();
+    var its=tc.items.filter(function(it){return it.str&&it.str.trim()}).map(function(it){return {x:it.transform[4],y:it.transform[5],t:it.str.trim()}});
+    its.sort(function(a,b){return b.y-a.y||a.x-b.x});
+    var rows=[],cur=null;
+    its.forEach(function(it){if(!cur||cur.y-it.y>4){cur={y:it.y,c:[]};rows.push(cur)}cur.c.push(it)});
+    var txt=rows.map(function(r){return r.c.sort(function(a,b){return a.x-b.x}).map(function(c){return c.t}).join(' | ')}).join('\n');
+    pages.push(txt); total+=txt.replace(/[\s|]/g,'').length;
+  }
+  return {doc:doc,text:pages,total:total};
+}
+async function pdfImages(doc,max){
+  var out=[];
+  for(var p=1;p<=Math.min(doc.numPages,max);p++){
+    var pg=await doc.getPage(p), vp=pg.getViewport({scale:1}), sc=1800/Math.max(vp.width,vp.height), v2=pg.getViewport({scale:sc});
+    var c=document.createElement('canvas'); c.width=Math.round(v2.width); c.height=Math.round(v2.height);
+    var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
+    await pg.render({canvasContext:x,viewport:v2}).promise;
+    out.push(await new Promise(function(r){c.toBlob(r,'image/jpeg',0.85)}));
+  }
+  return out;
+}
+function shrink(file){
+  return new Promise(function(res,rej){
+    var fr=new FileReader();
+    fr.onerror=function(){rej({code:'image_rejected'})};
+    fr.onload=function(){
+      var img=new Image();
+      img.onload=function(){
+        var r=Math.min(1,2000/Math.max(img.width,img.height)), c=document.createElement('canvas');
+        c.width=Math.max(1,Math.round(img.width*r)); c.height=Math.max(1,Math.round(img.height*r));
+        var x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,0,0,c.width,c.height);
+        c.toBlob(function(b){res(b||file)},'image/jpeg',0.9);
+      };
+      img.onerror=function(){res(file)};
+      img.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+function scanLines(data){
+  var lines=Array.isArray(data)?data:(data&&data.lines)||[];
+  return lines.filter(function(l){return l&&String(l.desc||'').trim()}).map(function(l){
+    return {kind:l.kind==='heading'?'heading':'item',desc:String(l.desc).trim(),unit:l.unit?String(l.unit):'',qty:scanNum(l.qty),rate:scanNum(l.rate),unsure:!!l.unsure,inc:true,mat:true}});
+}
+async function scanFiles(fl){
+  var files=Array.prototype.slice.call(fl||[]); if(!files.length)return;
+  scan=null; scanMsg=''; scanBusy=true; scanRepConf=false; renderScan();
+  scanCtl=new AbortController();
+  var all=[], info={title:'',consultant:'',date:''}, notes=[], jobs=[];
+  function step(m){scanMsg=m;renderScan()}
+  function pushText(nm,text){
+    var ch=chunkText(text,6000);
+    if(ch.length>20){notes.push('Only the first part of '+nm+' was read.');ch=ch.slice(0,20)}
+    ch.forEach(function(c,i){jobs.push({label:nm,text:c,i:i+1,n:ch.length})});
+  }
+  try{
+    var sample=await window.claude.use('sample'); if(!sample)throw {code:'unavailable'};
+    var lim=await sample.limits(), imgs=[], per=lim.images?Math.max(1,Math.min(3,lim.images.maxCount)):1;
+    for(var fi=0;fi<files.length;fi++){
+      var f=files[fi], nm=f.name||'file', k=fileKind(f);
+      if(k==='image'){imgs.push(f);continue}
+      if(!k)throw {code:'unsupported'};
+      step('Opening '+nm+'…');
+      if(k==='csv'){pushText(nm,await f.text());continue}
+      if(k==='xls'){pushText(nm,await sheetText(f));continue}
+      var P=await pdfRead(await f.arrayBuffer());
+      if(P.total>=80){pushText(nm,P.text.join('\n'))}
+      else{
+        if(!lim.images)throw {code:'images_unavailable'};
+        step('Preparing scanned pages of '+nm+'…');
+        var pim=await pdfImages(P.doc,12);
+        for(var b0=0;b0<pim.length;b0+=per)jobs.push({label:nm+' (scanned pages)',img:pim.slice(b0,b0+per)});
+        if(P.doc.numPages>12)notes.push('Only the first 12 pages of '+nm+' were read.');
+      }
+    }
+    if(imgs.length){
+      if(!lim.images)throw {code:'images_unavailable'};
+      var bl=[]; for(var ii=0;ii<imgs.length;ii++)bl.push(await shrink(imgs[ii]));
+      for(var b1=0;b1<bl.length;b1+=per)jobs.push({label:'your photo'+(bl.length>1?'s':''),img:bl.slice(b1,b1+per)});
+    }
+    for(var ji=0;ji<jobs.length;ji++){
+      var jb=jobs[ji];
+      step('Reading '+jb.label+(jobs.length>1?' (step '+(ji+1)+' of '+jobs.length+')':'')+'. This can take a minute.');
+      var data=await sample.json(jb.img?IMG_PROMPT+(jb.img.length>1?' The images are consecutive pages, in order.':''):txtPrompt(jb.label,jb.i,jb.n,jb.text),
+        jb.img?{images:jb.img,modelTier:'default',cache:false,signal:scanCtl.signal}:{modelTier:'quick',cache:false,signal:scanCtl.signal});
+      all=all.concat(scanLines(data));
+      ['title','consultant'].forEach(function(k2){if(!info[k2]&&data&&data[k2])info[k2]=String(data[k2])});
+      if(!info.date&&data&&/^\d{4}-\d{2}-\d{2}$/.test(data.date||''))info.date=data.date;
+    }
+    scanInfo=info; scan=all.length?all:null;
+    scanMsg=all.length?('Found '+all.length+' lines'+(notes.length?'. '+notes.join(' '):'')+'. Check them below, fix anything wrong, then add them to your BOQ.'):'No BOQ lines were found in that file. Check it is the right one, or try a clearer copy.';
+  }catch(err){
+    if(all.length){scanInfo=info;scan=all;scanMsg='Reading stopped early. '+scanErr(err)+' Showing the '+all.length+' lines read so far.'}
+    else{scan=null;scanMsg=scanErr(err)}
+  }
+  scanBusy=false; scanCtl=null; renderScan();
+}
+function renderScan(){
+  var el=$('scanpanel'); if(!el)return;
+  var h='<h2>Upload an existing BOQ</h2><p class="muted">Upload a BOQ you already have: a PDF, an Excel or CSV file, or a clear photo or screenshot (handwritten works too). Claude reads it and shows what it found so you can correct anything before it is added. Please check descriptions, quantities and rates.</p>'+
+   '<input type="file" id="boqfile" accept="image/*,.pdf,application/pdf,.xlsx,.xls,.csv,text/csv" multiple hidden>'+
+   '<div class="pbtns"><button class="btn primary" id="scanbtn"'+(scanBusy?' disabled':'')+'>'+(scanBusy?'Reading…':'Choose file(s)')+'</button>'+(scanBusy?'<button class="btn" id="scancancel">Stop</button>':'')+'</div>'+
+   '<p class="muted" id="scanmsg" aria-live="polite">'+esc(scanMsg)+'</p>';
+  if(scan){
+    var rows=scan.map(function(l,i){
+      var chk='<td><input type="checkbox" data-si="'+i+'.inc"'+(l.inc?' checked':'')+' style="width:22px;height:22px;min-width:0" aria-label="Include this line"></td>';
+      var flag=l.unsure?'<span title="Not sure about this line" aria-label="Not sure about this line">⚠</span>':'';
+      if(l.kind==='heading')return '<tr class="'+(l.unsure?'unsure':'')+'">'+chk+'<td colspan="5"><input data-si="'+i+'.desc" value="'+esc(l.desc)+'" style="font-weight:700" aria-label="Section heading"></td><td>'+flag+'</td></tr>';
+      return '<tr class="'+(l.unsure?'unsure':'')+'">'+chk+'<td><input data-si="'+i+'.desc" value="'+esc(l.desc)+'" aria-label="Description"></td>'+
+       '<td><input data-si="'+i+'.unit" list="units" value="'+esc(l.unit)+'" style="width:76px" aria-label="Unit"></td>'+
+       '<td><input type="number" min="0" step="any" data-si="'+i+'.qty" value="'+esc(l.qty)+'" style="width:84px" aria-label="Quantity"></td>'+
+       '<td><input type="number" min="0" step="any" data-si="'+i+'.rate" value="'+esc(l.rate)+'" style="width:104px" aria-label="Rate"></td>'+
+       '<td style="text-align:center"><input type="checkbox" data-si="'+i+'.mat"'+(l.mat?' checked':'')+' style="width:22px;height:22px;min-width:0" aria-label="Counts as a material"></td><td>'+flag+'</td></tr>';
+    }).join('');
+    h+=(scanInfo.title||scanInfo.consultant||scanInfo.date?'<p class="muted">Also found: '+[scanInfo.title&&'title “'+esc(scanInfo.title)+'”',scanInfo.consultant&&'consultant '+esc(scanInfo.consultant),scanInfo.date&&'date '+esc(scanInfo.date)].filter(Boolean).join(', ')+'. These fill empty title-block fields only.</p>':'')+
+     '<div class="scroll"><table style="min-width:700px"><tr><th>Add</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate (₦)</th><th>Material</th><th></th></tr>'+rows+'</table></div>'+
+     '<p class="muted">Lines marked ⚠ were hard to read. Untick Material for work items (like excavation) that are not materials you buy.</p>'+
+     '<div class="pbtns"><button class="btn primary" id="scanadd">Add to BOQ</button>'+
+     (scanRepConf?'<button class="btn" id="scanrep">Confirm: replace current BOQ</button>':'<button class="btn" id="scanrep">Replace current BOQ</button>')+
+     '<button class="btn" id="scandiscard">Discard</button></div>'+
+     (scanRepConf?'<p class="muted">This removes your current BOQ lines. Materials already received stay in the Materials tab as separate entries.</p>':'');
+  }
+  el.innerHTML=h;
+}
+function importScan(replace){
+  var lines=(scan||[]).filter(function(l){return l.inc&&String(l.desc||'').trim()});
+  if(!lines.length){scanMsg='Nothing is ticked to add.';renderScan();return}
+  var add=lines.map(function(l){return l.kind==='heading'?{id:pid(),h:true,desc:l.desc.trim()}:{id:pid(),desc:l.desc.trim(),unit:l.unit||'',qty:l.qty===''?'':String(l.qty),rate:l.rate===''?'':String(l.rate),mat:!!l.mat}});
+  S.boq=replace?add:S.boq.concat(add);
+  var I=S.boqInfo||(S.boqInfo={title:'',consultant:'',date:''});
+  if(!I.title&&scanInfo.title)I.title=scanInfo.title;
+  if(!I.consultant&&scanInfo.consultant)I.consultant=scanInfo.consultant;
+  if(!I.date&&scanInfo.date)I.date=scanInfo.date;
+  syncBoq(); save();
+  scan=null; scanRepConf=false; scanMsg=lines.length+' line'+(lines.length===1?'':'s')+' '+(replace?'now make up':'added to')+' your BOQ.';
+  drawBoq();
+}
+$('v-boq').addEventListener('change',function(e){
+  if(e.target.id==='boqfile'){scanFiles(e.target.files);return}
+  var si=e.target.dataset.si; if(!si||e.target.type!=='checkbox')return;
+  var a=si.split('.'); scan[+a[0]][a[1]]=e.target.checked;
+});
+$('v-boq').addEventListener('input',function(e){
+  var si=e.target.dataset.si; if(!si||e.target.type==='checkbox')return;
+  var a=si.split('.'); scan[+a[0]][a[1]]=e.target.value;
+});
+$('v-boq').addEventListener('click',function(e){
+  var id=e.target.id;
+  if(id==='scanbtn'){$('boqfile').click()}
+  else if(id==='scancancel'){if(scanCtl)scanCtl.abort()}
+  else if(id==='scandiscard'){scan=null;scanMsg='';scanRepConf=false;renderScan()}
+  else if(id==='scanadd'){importScan(false)}
+  else if(id==='scanrep'){if(S.boq.length&&!scanRepConf){scanRepConf=true;renderScan()}else importScan(true)}
+});
+function nn(n){return (Math.round(n*100)/100).toLocaleString('en-NG')}
+async function makeMatPdf(){
+  var msg=$('matmsg');
+  syncBoq();
+  if(!S.materials.length){msg.textContent='There are no materials to export yet.';return}
+  if(!window.jspdf||!window.jspdf.jsPDF){msg.textContent='The PDF tool did not load. Check your connection and reload.';return}
+  var dl=null; try{dl=await window.claude.use('downloads')}catch(e){}
+  if(!dl){msg.textContent='Downloads are not available in this view. Open the page in claude.ai.';return}
+  var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'}), W=doc.internal.pageSize.getWidth(), tot=0;
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('Materials in store',40,44);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('Buildtab by DK',W-40,44,{align:'right'}); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-40,58,{align:'right'});
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text('Project:',40,70); doc.setFont('helvetica','normal'); doc.text(S.project||'',100,70);
+  var body=S.materials.map(function(m){
+    var b=boqOf(m),u=usedQty(m.id),rec=num(m.received);tot+=u*num(m.cost);
+    return [(m.name||'-')+(b?' (BOQ)':''),m.unit||'-',nn(num(m.cost)),b?nn(num(b.qty)):'-',nn(rec),nn(u),nn(rec-u),b?nn(Math.max(0,num(b.qty)-rec)):'-'];
+  });
+  doc.autoTable({startY:84,head:[['Material','Unit','Cost per unit (NGN)','BOQ qty','Received','Used','In stock','Still to order']],body:body,
+    styles:{fontSize:9},headStyles:{fillColor:[29,42,49]},
+    columnStyles:{2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'},6:{halign:'right'},7:{halign:'right'}},
+    margin:{left:40,right:40}});
+  doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text('Cost of materials used: NGN '+nn(tot),40,doc.lastAutoTable.finalY+22);
+  var slug=(S.project||'project').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'project';
+  try{
+    await dl.save({filename:'materials-'+slug+'.pdf',data:doc.output('arraybuffer')});
+    msg.textContent='Materials PDF saved.';
+  }catch(err){msg.textContent=(err&&err.code==='declined')?'Download cancelled.':'Could not save the PDF.'}
+}
+async function makeBoqPdf(){
+  var msg=$('boqmsg');
+  if(!S.boq.some(function(b){return !b.h})){msg.textContent='Add at least one item first.';return}
+  if(!window.jspdf||!window.jspdf.jsPDF){msg.textContent='The PDF tool did not load. Check your connection and reload.';return}
+  var dl=null; try{dl=await window.claude.use('downloads')}catch(e){}
+  if(!dl){msg.textContent='Downloads are not available in this view. Open the page in claude.ai.';return}
+  var doc=new window.jspdf.jsPDF({unit:'pt',format:'a4'}), n=0, total=0;
+  var I=S.boqInfo||{}, W=doc.internal.pageSize.getWidth(), y=44;
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('Bill of Quantities',40,y);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  doc.text('Buildtab by DK',W-40,y,{align:'right'}); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-40,y+14,{align:'right'});
+  y+=26; doc.setFontSize(11);
+  function trow(l,v){doc.setFont('helvetica','bold');doc.text(l,40,y);doc.setFont('helvetica','normal');var ls=doc.splitTextToSize(v||'',W-190);doc.text(ls.length?ls:[''],150,y);y+=16*Math.max(1,ls.length)}
+  trow('Project:',S.project||''); trow('Title:',I.title||''); trow('BOQ consultant:',I.consultant||''); trow('Date:',I.date?fmtDate(I.date):'');
+  y+=36; doc.setFont('helvetica','bold'); doc.text('Signature:',40,y); doc.setLineWidth(0.8); doc.line(150,y,380,y); doc.setFont('helvetica','normal'); y+=6;
+  var body=S.boq.map(function(b){
+    if(b.h)return [{content:b.desc||'',colSpan:6,styles:{fontStyle:'bold',fillColor:[230,230,230],textColor:20}}];
+    n++;var a=num(b.qty)*num(b.rate);total+=a;
+    return [n,b.desc||'',b.unit||'',nn(num(b.qty)),nn(num(b.rate)),nn(a)];
+  });
+  doc.autoTable({startY:y+14,head:[['Item','Description','Unit','Qty','Rate (NGN)','Amount (NGN)']],body:body,
+    foot:[[{content:'Total',colSpan:5,styles:{halign:'right'}},nn(total)]],
+    styles:{fontSize:9},headStyles:{fillColor:[29,42,49]},footStyles:{fillColor:[225,225,225],textColor:20,fontStyle:'bold'},
+    columnStyles:{0:{cellWidth:34},2:{cellWidth:42},3:{halign:'right',cellWidth:56},4:{halign:'right',cellWidth:76},5:{halign:'right',cellWidth:84}},
+    margin:{left:40,right:40}});
+  var slug=(S.project||'project').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'project';
+  try{
+    await dl.save({filename:'boq-'+slug+'.pdf',data:doc.output('arraybuffer')});
+    msg.textContent='BOQ PDF saved.';
+  }catch(err){msg.textContent=(err&&err.code==='declined')?'Download cancelled.':'Could not save the PDF.'}
+}
+
+/* ---------- Summary ---------- */
+function sumData(){
+  syncWorkers();
+  var order=S.stages.slice(), BW={}, ST={};
+  function st(s){return ST[s]||(ST[s]={days:0,hours:0,earn:0,mat:0})}
+  Object.keys(S.days).sort().forEach(function(k){
+    var d=S.days[k], s=d.stage||'';
+    if(logged(k)){st(s).days++; if(s&&order.indexOf(s)<0)order.push(s)}
+    d.entries.forEach(function(e){var n=e.name.trim(); if(!n)return; var a=earn(e);
+      st(s).hours+=num(e.hours); st(s).earn+=a;
+      var w=BW[n]||(BW[n]={}); w[s]=(w[s]||0)+a});
+    (d.mats||[]).forEach(function(m){var x=mt(m.id); if(x)st(s).mat+=num(m.qty)*num(x.cost)});
+  });
+  if(ST['']&&(ST[''].days||ST[''].earn))order.push('');
+  var paid={}; S.sched.forEach(function(r){if(r.worker)paid[r.worker]=(paid[r.worker]||0)+paidOf(r)});
+  var names=S.workers.map(function(w){return w.name}).sort(), gE=0,gP=0, colT={};
+  var rows=names.map(function(n){var w=wk(n),t=0;
+    var cells=order.map(function(s){var a=(BW[n]&&BW[n][s])||0;t+=a;colT[s]=(colT[s]||0)+a;return a});
+    var p=paid[n]||0;gE+=t;gP+=p;
+    return {name:n,trade:(w&&w.trade)||'',cells:cells,t:t,p:p,b:t-p}});
+  var cum=0, srows=order.map(function(s){var x=st(s);cum+=x.earn;return {s:s,days:x.days,hours:x.hours,earn:x.earn,cum:cum,mat:x.mat}});
+  return {order:order,rows:rows,colT:colT,gE:gE,gP:gP,srows:srows,
+    lbl:function(s){return s||'No stage'}};
+}
+function drawSum(){
+  var D=sumData(), lbl=D.lbl;
+  var wrows=D.rows.map(function(r){
+    return '<tr><td>'+esc(r.name)+(r.trade?'<br><span class="muted">'+esc(r.trade)+'</span>':'')+'</td>'+r.cells.map(function(a){return '<td class="n">'+fm(a)+'</td>'}).join('')+'<td class="n"><strong>'+fm(r.t)+'</strong></td><td class="n">'+fm(r.p)+'</td><td class="n '+(r.b>0?'neg':'pos')+'">'+fm(r.b)+'</td></tr>'}).join('');
+  var foot='<tr><td>All workers</td>'+D.order.map(function(s){return '<td class="n">'+fm(D.colT[s]||0)+'</td>'}).join('')+'<td class="n">'+fm(D.gE)+'</td><td class="n">'+fm(D.gP)+'</td><td class="n">'+fm(D.gE-D.gP)+'</td></tr>';
+  var srows=D.srows.map(function(x){
+    return '<tr><td>'+esc(lbl(x.s))+'</td><td class="n">'+x.days+'</td><td class="n">'+x.hours+'</td><td class="n">'+fm(x.earn)+'</td><td class="n">'+fm(x.cum)+'</td><td class="n">'+fm(x.mat)+'</td></tr>'}).join('');
+  var ks=Object.keys(S.days).filter(logged).sort();
+  var log=ks.length?ks.map(function(k){return dayCard(k)}).join(''):'<p class="empty-msg">No days logged yet. Pick a date in the calendar to start.</p>';
+  var T=projTotals();
+  function stat(l,v){return '<div class="stat"><span>'+l+'</span><strong>'+v+'</strong></div>'}
+  $('v-sum').innerHTML=
+   '<div class="panel"><h2>Project summary</h2><p class="muted">'+esc(S.project||'Untitled project')+(T.first?' · '+fmtDate(T.first)+' to '+fmtDate(T.last):'')+'</p><div class="stats">'+stat('Days logged',T.days)+stat('Total hours',T.hours)+stat('Labour earned',fm(T.labour))+stat('Paid to workers',fm(T.paid))+stat('Balance owed',fm(T.labour-T.paid))+stat('Materials used',fm(T.matCost))+stat('Total cost',fm(T.labour+T.matCost))+'</div><button class="btn primary" id="pdfbtn">Download summary as PDF</button> <span class="muted" id="pdfmsg" aria-live="polite"></span></div>'+
+   '<div class="panel"><h2>Worker earnings by stage</h2><p class="muted">Set each worker’s rate in the Pay tab, and pick a stage on each day you log.</p><div class="scroll"><table><tr><th>Worker</th>'+D.order.map(function(s){return '<th class="n">'+esc(lbl(s))+'</th>'}).join('')+'<th class="n">Total earned</th><th class="n">Paid</th><th class="n">Balance</th></tr>'+
+   (wrows||'<tr><td class="empty-msg" colspan="9">No workers yet.</td></tr>')+'<tfoot>'+(D.rows.length?foot:'')+'</tfoot></table></div></div>'+
+   '<div class="panel"><h2>Stage totals</h2><div class="scroll"><table><tr><th>Stage</th><th class="n">Days</th><th class="n">Hours</th><th class="n">Labour earned</th><th class="n">Cumulative labour</th><th class="n">Materials used</th></tr>'+
+   (srows||'<tr><td colspan="6" class="empty-msg">Nothing logged yet.</td></tr>')+'</table></div></div>'+
+   '<div class="panel"><h2>Daily summaries</h2><p class="muted">One entry per logged day. The project summary above is the total of these days.</p>'+log+'</div>';
+}
+function pn(n){return 'NGN '+(Math.round(n*100)/100).toLocaleString('en-NG')}
+async function makePdf(){
+  var msg=$('pdfmsg');
+  if(!window.jspdf||!window.jspdf.jsPDF){msg.textContent='The PDF tool did not load. Check your connection and reload.';return}
+  var dl=null; try{dl=await window.claude.use('downloads')}catch(e){}
+  if(!dl){msg.textContent='Downloads are not available in this view. Open the page in claude.ai.';return}
+  var D=sumData(), doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  doc.setFontSize(18); doc.text((S.project||'Site project')+' – summary',40,40);
+  doc.setFontSize(10); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),40,56);
+  doc.text('Buildtab by DK',doc.internal.pageSize.getWidth()-40,40,{align:'right'});
+  var first=true;
+  function tbl(title,head,body,foot){
+    if(!body.length)return;
+    var sy=doc.lastAutoTable?doc.lastAutoTable.finalY+26:78;
+    if(sy>doc.internal.pageSize.getHeight()-100){doc.addPage();sy=40}
+    doc.setFontSize(13); doc.text(title,40,sy);
+    doc.autoTable({startY:sy+6,head:[head],body:body,foot:foot?[foot]:undefined,styles:{fontSize:9},headStyles:{fillColor:[29,42,49]},footStyles:{fillColor:[225,225,225],textColor:20},margin:{left:40,right:40}});
+  }
+  var T=projTotals();
+  tbl('Project summary',['Measure','Value'],[['Project',S.project||'-'],['Period',T.first?fmtDate(T.first)+' to '+fmtDate(T.last):'-'],['Days logged',T.days],['Total hours',T.hours],['Labour earned',pn(T.labour)],['Paid to workers',pn(T.paid)],['Balance owed',pn(T.labour-T.paid)],['Materials used (cost)',pn(T.matCost)],['Total cost',pn(T.labour+T.matCost)]]);
+  tbl('Worker earnings by stage',['Worker'].concat(D.order.map(D.lbl),['Total earned','Paid','Balance']),
+    D.rows.map(function(r){return [r.name+(r.trade?' ('+r.trade+')':'')].concat(r.cells.map(pn),[pn(r.t),pn(r.p),pn(r.b)])}),
+    ['All workers'].concat(D.order.map(function(s){return pn(D.colT[s]||0)}),[pn(D.gE),pn(D.gP),pn(D.gE-D.gP)]));
+  tbl('Stage totals',['Stage','Days','Hours','Labour earned','Cumulative labour','Materials used'],
+    D.srows.map(function(x){return [D.lbl(x.s),x.days,x.hours,pn(x.earn),pn(x.cum),pn(x.mat)]}));
+  tbl('Payments by worker and day',['Date','Worker','Amount paid'],S.sched.filter(function(r){return paidOf(r)>0}).slice().sort(function(a,b){return (a.date||'')<(b.date||'')?-1:1}).map(function(r){return [r.date?fmtDate(r.date):'No date',r.worker||'-',pn(paidOf(r))]}));
+  tbl('Paid per day',['Date','Earned','Paid','Paid to','Total paid so far'],dailyRows().map(function(m){return [m.k?fmtDate(m.k):'No date',pn(m.earned),m.paid?pn(m.paid):'-',m.who.map(function(w){return w.n+' '+pn(w.a)}).join(', ')||'-',pn(m.cum)]}));
+  var CW=workerCum();
+  tbl('Cumulative by worker',['Worker','Days on site','Total earned','Amount paid','Balance owed'],CW.rows.map(function(w){return [w.n,w.days,pn(w.earned),pn(w.paid),pn(w.bal)]}));
+  tbl('Materials',['Material','Unit','Received','Used','In stock','Cost of used'],
+    S.materials.map(function(m){var u=usedQty(m.id);return [m.name||'-',m.unit||'-',num(m.received),u,num(m.received)-u,pn(u*num(m.cost))]}));
+  tbl('Daily summaries',['Date','Stage','Work done','Workers (hours)','Labour','Materials'],
+    Object.keys(S.days).filter(logged).sort().map(function(k){var d=S.days[k],x=dayStats(k);return [fmtDate(k),d.stage||'-',d.work||'-',x.workers.map(function(w){return w.n+' '+w.h+'h'}).join(', ')||'-',pn(x.labour),pn(x.matCost)]}));
+  try{
+    await dl.save({filename:'site-summary.pdf',data:doc.output('arraybuffer')});
+    msg.textContent='PDF saved.';
+  }catch(err){msg.textContent=(err&&err.code==='declined')?'Download cancelled.':'Could not save the PDF.'}
+}
+
+/* ---------- Shared handlers ---------- */
+function setP(p,v){var a=p.split('.'),o=S;for(var i=0;i<a.length-1;i++)o=o[a[i]];o[a[a.length-1]]=v}
+function redraw(){if(cur==='pay')drawPay();else if(cur==='mat')drawMat();else if(cur==='sum')drawSum();else if(cur==='proj')drawProj();else if(cur==='boq')drawBoq()}
+['v-pay','v-mat'].forEach(function(id){
+  var el=$(id);
+  el.addEventListener('input',function(e){
+    var p=e.target.dataset.p; if(!p)return;
+    setP(p,e.target.value); save();
+    if(cur==='pay')refreshPay(); else refreshMat();
+  });
+  el.addEventListener('click',function(e){
+    var t=e.target, ds=t.dataset;
+    if(t.id==='addwk'){var n=$('nw').value.trim();if(n&&!wk(n)){S.workers.push({name:n,trade:'',rate:'',basis:'hour'});save();drawPay()}}
+    else if(t.id==='addst'){var s=$('ns').value.trim();if(s&&S.stages.indexOf(s)<0){S.stages.push(s);save();drawPay()}}
+    else if(t.id==='addpay'){S.sched.push({date:todayIso,worker:'',amt:'',st:'paid'});save();drawPay()}
+    else if(t.id==='addmat'){S.materials.push({id:'m'+Date.now()+Math.floor(Math.random()*999),name:'',unit:'',cost:'',received:''});save();drawMat()}
+    else if(ds.delstage!==undefined){S.stages.splice(+ds.delstage,1);save();drawPay()}
+    else if(ds.delsched!==undefined){S.sched.splice(+ds.delsched,1);save();drawPay()}
+    else if(ds.delmat!==undefined){S.materials.splice(+ds.delmat,1);save();drawMat()}
+    else if(ds.delwk!==undefined){pendingDel=S.workers[+ds.delwk].name;drawPay()}
+    else if(ds.confirmdel!==undefined){removeWorker(S.workers[+ds.confirmdel].name);drawPay()}
+    else if(ds.canceldel!==undefined){pendingDel=null;drawPay()}
+  });
+});
+
+$('v-sum').addEventListener('click',function(e){if(e.target.id==='pdfbtn')makePdf()});
+$('savebtn').addEventListener('click',saveNow);
+$('v-pay').addEventListener('keydown',function(e){if(e.key==='Enter'&&(e.target.id==='nw'||e.target.id==='ns')){var b=$(e.target.id==='nw'?'addwk':'addst');if(b)b.click()}});
+$('v-pay').addEventListener('input',function(e){var n=e.target.dataset.pw;if(n===undefined)return;setPay(payDate,n,e.target.value);save();refreshPay()});
+$('v-pay').addEventListener('change',function(e){if(e.target.id==='paydate'){payDate=e.target.value||todayIso;drawPay()}});
+$('v-pay').addEventListener('click',function(e){if(e.target.id==='payaddw'){var v=$('payextra').value;if(v){(payExtra[payDate]=payExtra[payDate]||[]).push(v);drawPay()}}});
+$('v-boq').addEventListener('input',function(e){
+  var p=e.target.dataset.p; if(!p||e.target.type==='checkbox')return;
+  setP(p,e.target.value);syncBoq();save();refreshBoq();
+});
+$('v-boq').addEventListener('change',function(e){
+  var p=e.target.dataset.p; if(!p||e.target.type!=='checkbox')return;
+  setP(p,e.target.checked);syncBoq();save();refreshBoq();
+});
+$('v-boq').addEventListener('click',function(e){
+  var t=e.target, ds=t.dataset;
+  if(t.id==='addboq'){S.boq.push({id:pid(),desc:'',unit:'',qty:'',rate:'',mat:true});save();drawBoq();var ins=document.querySelectorAll('#v-boq input[data-p$=".desc"]');if(ins.length)ins[ins.length-1].focus()}
+  else if(t.id==='addhead'){S.boq.push({id:pid(),h:true,desc:''});save();drawBoq();var hs=document.querySelectorAll('#v-boq input[data-p$=".desc"]');if(hs.length)hs[hs.length-1].focus()}
+  else if(ds.delb!==undefined){S.boq.splice(+ds.delb,1);syncBoq();save();drawBoq()}
+  else if(t.id==='boqpdf')makeBoqPdf();
+});
+$('v-mat').addEventListener('click',function(e){if(e.target.id==='gotoboq')showTab('boq');else if(e.target.id==='matpdf')makeMatPdf()});
+function showTab(t){
+  cur=t; if(t==='pay')payDate=sel||todayIso;
+  ['proj','cal','boq','pay','mat','sum'].forEach(function(x){$('v-'+x).hidden=(x!==cur)});
+  document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-selected',x.dataset.tab===cur)});
+  if(cur==='cal'){drawCal();drawDay()}else redraw();
+}
+$('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b)showTab(b.dataset.tab)});
+
+$('v-proj').addEventListener('click',function(e){
+  var t=e.target, ds=t.dataset;
+  if(t.id==='addp'){var n=$('np').value.trim();if(n){var p=newProj(n);R.projects.push(p);switchProject(p.id)}}
+  else if(ds.open!==undefined){switchProject(R.projects[+ds.open].id)}
+  else if(ds.delp!==undefined){pendingProj=R.projects[+ds.delp].id;drawProj()}
+  else if(ds.cancelp!==undefined){pendingProj=null;drawProj()}
+  else if(ds.confdelp!==undefined){delProject(R.projects[+ds.confdelp].id)}
+  else if(t.id==='addstage'){var s=$('ns').value.trim();if(s&&S.stages.indexOf(s)<0){S.stages.push(s);save();drawProj()}}
+  else if(ds.dels!==undefined){var i=+ds.dels;if(stageUse(S.stages[i])){pendingStage=i;drawProj()}else removeStage(i)}
+  else if(ds.confdels!==undefined){removeStage(+ds.confdels)}
+  else if(ds.canceldels!==undefined){pendingStage=null;drawProj()}
+  else if(ds.mv!==undefined){var a=ds.mv.split(':'),i2=+a[0],j2=i2+(+a[1]);if(j2>=0&&j2<S.stages.length){var x=S.stages[i2];S.stages[i2]=S.stages[j2];S.stages[j2]=x;save();drawProj()}}
+});
+$('v-proj').addEventListener('change',function(e){
+  var si=e.target.dataset.stage; if(si===undefined)return; si=+si;
+  var old=S.stages[si], nv=e.target.value.trim();
+  if(!nv||(nv!==old&&S.stages.indexOf(nv)>=0)){drawProj();return}
+  if(nv!==old){Object.keys(S.days).forEach(function(k){if(S.days[k].stage===old)S.days[k].stage=nv});S.stages[si]=nv;save()}
+});
+$('v-proj').addEventListener('keydown',function(e){if(e.key==='Enter'){if(e.target.id==='np')$('addp').click();else if(e.target.id==='ns')$('addstage').click()}});
+
+sel=todayIso; norm(); drawBar(true); drawCal(); drawDay();
+setSync('Saved on this device');
+function refreshAll(){drawBar(true);drawCal();drawDay();redraw()}
+(async function initCloud(){
+  try{
+    var sb=window.sb; if(!sb)return;
+    var snap=await sb.from('sitelog').select('json,saved_at').eq('user_id',uid).maybeSingle();
+    if(snap.error)throw snap.error;
+    var rem=0, row=snap.data;
+    if(row){
+      var remote=JSON.parse(row.json); rem=remote.savedAt||0;
+      if(rem>(R.savedAt||0)){loadRoot(remote);try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}sel=todayIso;refreshAll()}
+    }
+    cloud.ref={set:function(o){return sb.from('sitelog').upsert({user_id:uid,json:o.json,saved_at:o.savedAt}).then(function(r){if(r.error)throw r.error})}};
+    if(!row||(R.savedAt||0)>rem){if(R.savedAt)cloudSave()}else setSync('All changes saved to your account');
+  }catch(e){setSync('Saved on this device only (could not reach server)')}
+})();
+};
+</script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)}, cfg=window.BUILDTAB_CONFIG||{}, mode='in', started=false, recovering=/type=recovery/.test(location.hash);
+var hashErr=/error_description=([^&]*)/.exec(location.hash);
+// Replaces the Claude-only download feature with a normal browser download
+window.claude={use:async function(n){
+  if(n==='downloads')return {save:async function(o){var b=new Blob([o.data],{type:'application/pdf'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}};
+  return null}};
+function msg(t,ok){var e=$('amsg');e.textContent=t;e.style.color=ok?'var(--ok)':'var(--danger)'}
+function setMode(m){
+  mode=m; var r=m==='reset';
+  $('agoo').textContent=m==='in'?'Sign in':m==='up'?'Create account':'Save new password';
+  $('aswitch').textContent=m==='in'?'Create a new account':'I already have an account';
+  $('amode').textContent=m==='in'?'Sign in to open your site logs.':m==='up'?'Create your account.':'Choose a new password.';
+  $('aplabel').textContent=r?'New password (min 6 characters)':'Password (min 6 characters)';
+  $('apass').autocomplete=m==='in'?'current-password':'new-password';
+  $('aemailbox').hidden=r; $('aswitch').hidden=r; $('aforgot').hidden=(m!=='in'); msg('');
+}
+if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_URL.indexOf('YOUR-')>-1){msg('Setup not finished: put your Supabase URL and key in config.js');$('agoo').disabled=true;$('aforgot').hidden=true;return}
+var sb=window.sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+function start(session){if(started)return;started=true;document.body.classList.remove('locked');window.startBuildtab(session.user.id)}
+async function go(){
+  var email=$('aemail').value.trim(), pw=$('apass').value;
+  if((mode!=='reset'&&!email)||pw.length<6){msg(mode==='reset'?'Enter a new password of at least 6 characters.':'Enter your email and a password of at least 6 characters.');return}
+  $('agoo').disabled=true; msg('Please wait…',true);
+  try{
+    if(mode==='reset'){
+      var u=await sb.auth.updateUser({password:pw}); if(u.error)throw u.error;
+      var g=await sb.auth.getSession(); recovering=false; history.replaceState(null,'',location.pathname);
+      if(g.data&&g.data.session)start(g.data.session); else{setMode('in');msg('Password updated. Please sign in.',true)}
+    }else if(mode==='in'){var r=await sb.auth.signInWithPassword({email:email,password:pw});if(r.error)throw r.error;start(r.data.session)}
+    else{var s=await sb.auth.signUp({email:email,password:pw});if(s.error)throw s.error;
+      if(s.data.session)start(s.data.session);else{msg('Account created. Check your email and click the confirmation link, then sign in.',true);setMode('in')}}
+  }catch(e){msg(e.message||'Something went wrong. Try again.')}
+  $('agoo').disabled=false;
+}
+async function forgot(){
+  var email=$('aemail').value.trim();
+  if(!email){msg('Type your email above first, then tap Forgot password.');return}
+  $('aforgot').disabled=true; msg('Please wait…',true);
+  try{
+    var r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}); if(r.error)throw r.error;
+    msg('If that email has an account, a reset link is on its way. Open the link on this device.',true);
+  }catch(e){msg(e.message||'Could not send the reset email. Try again later.')}
+  $('aforgot').disabled=false;
+}
+$('agoo').onclick=go; $('aforgot').onclick=forgot; $('aswitch').onclick=function(){setMode(mode==='in'?'up':'in')};
+['aemail','apass'].forEach(function(id){$(id).addEventListener('keydown',function(e){if(e.key==='Enter')go()})});
+$('signout').onclick=async function(){await sb.auth.signOut();location.reload()};
+sb.auth.onAuthStateChange(function(ev){if(ev==='PASSWORD_RECOVERY'&&!started){recovering=true;setMode('reset')}});
+if(recovering)setMode('reset');
+else if(hashErr)msg(decodeURIComponent(hashErr[1].replace(/\+/g,' '))+'. Request a new reset link.');
+sb.auth.getSession().then(function(r){if(!recovering&&r.data&&r.data.session)start(r.data.session)});
+})();
+</script>
+</body>
+</html>
