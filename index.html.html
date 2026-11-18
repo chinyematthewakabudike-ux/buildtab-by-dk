@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Buildtab by DK</title>
+<title>Buildvita by DK</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -86,13 +88,28 @@ tfoot td{font-weight:600;border-top:2px solid var(--ink)}
 .tblock{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 12px;border:1px solid var(--line);border-radius:8px;padding:4px 12px 12px;margin:10px 0;background:var(--bg)}
 .sig{grid-column:1/-1;margin-top:14px}
 .unsure{background:rgba(242,183,5,.2)}
+body.locked .wrap{display:none}
+#auth{display:none;min-height:100vh;align-items:center;justify-content:center;padding:16px}
+body.locked #auth{display:flex}
+.acard{background:var(--surface);border:1px solid var(--line);border-top:8px solid var(--hi);border-radius:8px;padding:20px;width:100%;max-width:380px}
+#amsg{min-height:1.4em;margin:10px 0 6px}
 </style>
 </head>
-<body>
+<body class="locked">
+<div id="auth"><div class="acard">
+<h1 class="appname">Buildvita by DK</h1>
+<p class="muted" id="amode">Sign in to open your site logs.</p>
+<div id="aemailbox"><label for="aemail">Email</label><input id="aemail" type="email" autocomplete="email"></div>
+<label id="aplabel" for="apass">Password (min 6 characters)</label><input id="apass" type="password" autocomplete="current-password">
+<p id="amsg" role="alert"></p>
+<button class="btn primary" id="agoo" style="width:100%">Sign in</button>
+<button class="btn" id="aswitch" style="width:100%;margin-top:8px">Create a new account</button>
+<button class="btn" id="aforgot" style="width:100%;margin-top:8px;border-style:dashed">Forgot password?</button>
+</div></div>
 <div class="wrap">
 <header>
-  <h1>Buildtab <span style="font-size:.55em;font-weight:600;color:var(--muted)">by DK</span></h1>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn primary" id="savebtn">Save now</button><span class="muted" id="sync" style="font-size:13px" aria-live="polite"></span><span class="muted" id="who" style="font-size:13px;flex-basis:100%"></span></div>
+  <h1 class="appname">Buildvita by DK</h1>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><button class="btn primary" id="savebtn">Save now</button><span class="muted" id="sync" style="font-size:13px" aria-live="polite"></span><button class="btn" id="signout">Sign out</button></div>
 </header>
 <section class="pbar" aria-label="Current project">
   <label class="pl" for="proj">Current project</label>
@@ -130,10 +147,9 @@ tfoot td{font-weight:600;border-top:2px solid var(--ink)}
 <datalist id="units"><option value="m"><option value="m2"><option value="m3"><option value="lm"><option value="no"><option value="kg"><option value="tonne"><option value="bag"><option value="litre"><option value="trip"><option value="item"><option value="sum"></datalist>
 
 <script>
-(function(){
-var KEY='site-daily-log-v1', R={projects:[],active:null}, S={};
-var pidn=0;
-function pid(){return 'p'+Date.now()+'_'+(pidn++)+Math.floor(Math.random()*999)}
+window.startBuildtab=function(uid){
+var APP_NAME=(window.BUILDTAB_CONFIG&&window.BUILDTAB_CONFIG.APP_NAME)||'Buildvita by DK', KEY='site-daily-log-v1:'+uid, R={projects:[],active:null}, S={};
+function pid(){return 'p'+Date.now()+Math.floor(Math.random()*999)}
 function newProj(name){return {id:pid(),project:name||'Untitled project',days:{},workers:[],sched:[],materials:[],stages:['Foundation','Walling','Roofing','Finishing']}}
 function norm(){R.projects.forEach(function(p){p.id=p.id||pid();p.project=p.project||'Untitled project';p.days=p.days||{};p.workers=p.workers||[];p.sched=p.sched||[];p.materials=p.materials||[];p.boq=p.boq||[];p.boqInfo=p.boqInfo||{title:'',consultant:'',date:''};p.stages=p.stages||['Foundation','Walling','Roofing','Finishing'];p.sched.forEach(function(r){if(r.amt===undefined){var pd=parseFloat(r.paid)>0;r.amt=pd?r.paid:(r.due||'');r.st=pd?'paid':'planned'}r.st=r.st||'paid'})})}
 function loadRoot(o){
@@ -313,29 +329,6 @@ function delProject(id){
 }
 function stageUse(s){return Object.keys(S.days).filter(function(k){return S.days[k].stage===s}).length}
 function removeStage(i){var s=S.stages[i];Object.keys(S.days).forEach(function(k){if(S.days[k].stage===s)S.days[k].stage=''});S.stages.splice(i,1);pendingStage=null;save();drawProj()}
-function addSample(){
-  var p=newProj('Sample: 3-bedroom bungalow'), c=0;
-  function sid(){return 'b'+Date.now()+'_'+(c++)}
-  function dk(off){var d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-off);return iso(d.getFullYear(),d.getMonth(),d.getDate())}
-  function B(d,u,q,r,m){return {id:sid(),desc:d,unit:u,qty:String(q),rate:String(r),mat:m!==false}}
-  p.workers=[{name:'Emeka',trade:'Bricklayer',rate:'8000',basis:'day'},{name:'Tunde',trade:'Helper',rate:'4000',basis:'day'},{name:'Chika',trade:'Carpenter',rate:'9000',basis:'day'},{name:'Musa',trade:'Steel fixer',rate:'1200',basis:'hour'}];
-  p.boqInfo={title:'Proposed 3-bedroom bungalow (sample)',consultant:'Sample Consult Ltd',date:dk(0)};
-  p.boq=[{id:sid(),h:true,desc:'Substructure'},B('Excavation to foundation trench','m3',60,3500,false),B('Sharp sand','tonne',15,18000),B('Granite chippings','tonne',20,22000),B('Portland cement 50kg','bag',150,9500),B('Reinforcement Y12','kg',900,1100),
-    {id:sid(),h:true,desc:'Superstructure'},B('9 inch sandcrete blocks','no',2200,650),B('Roofing sheets','m2',140,6500),B('Roof timber 2x4','no',80,2800)];
-  var keep=S; S=p; syncBoq(); S=keep;
-  var rec={'Portland cement 50kg':120,'Sharp sand':10,'Granite chippings':12,'Reinforcement Y12':500,'9 inch sandcrete blocks':800};
-  function mid(n){var m=p.materials.filter(function(x){return x.name===n})[0];if(m&&rec[n])m.received=String(rec[n]);return m?m.id:''}
-  function D(off,stage,work,ents,mats){p.days[dk(off)]={work:work,stage:stage,entries:ents.map(function(e){return {name:e[0],hours:String(e[1]),task:e[2]}}),mats:(mats||[]).map(function(m){return {id:mid(m[0]),qty:String(m[1])}})}}
-  D(5,'Foundation','Set out the foundation and started trench excavation.',[['Emeka',8,'Setting out'],['Tunde',8,'Trench digging']]);
-  D(4,'Foundation','Trench excavation completed.',[['Emeka',8,'Checking levels'],['Tunde',8,'Trench digging']]);
-  D(3,'Foundation','Poured blinding and fixed column reinforcement.',[['Emeka',8,'Blinding'],['Tunde',8,'Mixing concrete'],['Musa',8,'Fixing reinforcement']],[['Portland cement 50kg',12],['Sharp sand',1.5],['Granite chippings',2],['Reinforcement Y12',120]]);
-  D(2,'Walling','Started blockwork to the first course.',[['Emeka',8,'Blockwork']],[['9 inch sandcrete blocks',350],['Portland cement 50kg',8]]);
-  D(1,'Walling','Blockwork continued; lintel formwork started.',[['Emeka',8,'Blockwork'],['Tunde',8,'Mixing mortar'],['Chika',6,'Lintel formwork']],[['9 inch sandcrete blocks',400],['Portland cement 50kg',10],['Reinforcement Y12',60]]);
-  p.sched=[{date:dk(3),worker:'Emeka',amt:'8000',st:'paid'},{date:dk(3),worker:'Tunde',amt:'4000',st:'paid'},{date:dk(3),worker:'Musa',amt:'9600',st:'paid'},{date:dk(1),worker:'Emeka',amt:'16000',st:'paid'}];
-  R.projects.push(p); switchProject(p.id);
-  var d1=new Date(); d1.setDate(d1.getDate()-1); sel=dk(1); vy=d1.getFullYear(); vm=d1.getMonth();
-  showTab('cal');
-}
 function drawProj(){
   var rows=R.projects.map(function(p,i){var t=pstats(p),act=p.id===R.active;
     return '<div class="pcard'+(act?' act':'')+'"><div><h3>'+esc(p.project||'Untitled project')+(act?' <span class="badge">Current</span>':'')+'</h3><p class="muted">'+t.days+' days logged · '+t.hours+' hours · '+p.workers.length+' workers · labour '+fm(t.labour)+' · materials '+fm(t.matCost)+'</p></div><div class="pbtns">'+
@@ -349,8 +342,7 @@ function drawProj(){
    '<div class="panel"><h2>Your projects</h2><p class="muted">Each project keeps its own calendar, workers, pay, materials and stages. Rename the current project in the bar above.</p>'+rows+
    '<div class="add"><input id="np" placeholder="New project name" aria-label="New project name"><button class="btn primary" id="addp">Create project</button></div></div>'+
    '<div class="panel" id="stages"><h2>Stages for “'+esc(S.project||'this project')+'”</h2><p class="muted">Edit a name to rename a stage. The order sets how cumulative totals build up in the summary.</p><ul class="stgl">'+(stg||'<li class="empty-msg">No stages yet.</li>')+'</ul>'+
-   '<div class="add"><input id="ns" placeholder="New stage name" aria-label="New stage name"><button class="btn" id="addstage">Add stage</button></div></div>'+
-   '<div class="panel"><h2>Try it with sample data</h2><p class="muted">Adds a separate sample project with workers, a BOQ, five logged days, materials and payments, so you can explore every tab. Your own projects are not touched, and you can delete the sample at any time. Figures are for demonstration only.</p><button class="btn primary" id="addsample">Add sample project</button></div>';
+   '<div class="add"><input id="ns" placeholder="New stage name" aria-label="New stage name"><button class="btn" id="addstage">Add stage</button></div></div>';
 }
 
 /* ---------- Pay tab ---------- */
@@ -557,11 +549,11 @@ function loadLib(url,get){
 function scanNum(v){if(v===null||v===undefined||v==='')return '';var n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?'':String(n)}
 function scanErr(e){
   var c=e&&e.code;
-  return {unavailable:'Reading files only works inside claude.ai.',images_unavailable:'Reading images is not available in this view. Open the page in claude.ai.',
+  return {unavailable:'BOQ reading is not switched on yet. Check that the read-boq function is deployed in Supabase.',bad_key:'The AI key is missing or wrong. Check the ANTHROPIC_API_KEY secret in Supabase.',no_credit:'The AI account is out of credit. Add credit in the Anthropic console and try again.',images_unavailable:'Reading images is not available in this view. Open the page in claude.ai.',
    not_granted:'Permission to use Claude was declined, so the file could not be read.',rate_limited:'Too many requests just now. Please wait a little and try again.',
    image_rejected:'That image could not be used. Try a JPEG or PNG.',
    invalid_json:'Part of the BOQ could not be read cleanly. Try again, or upload a smaller part of it.',cancelled:'Stopped.',
-   session_expired:'Please sign in to claude.ai again and retry.',refused:'The file could not be processed. Try a clearer copy.',
+   session_expired:'Your session ended. Please sign out, sign in again and retry.',refused:'The file could not be processed. Try a clearer copy.',
    lib:'The file reader could not be loaded. Check your connection and try again.',unsupported:'That file type is not supported. Use a PDF, Excel (.xlsx or .xls), CSV, or a photo or screenshot. For Word files, save as PDF first.',
    badfile:'That file could not be opened. It may be damaged or password protected.'}[c]||'Something went wrong reading the file. Please try again.';
 }
@@ -753,7 +745,7 @@ async function makeMatPdf(){
   var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'}), W=doc.internal.pageSize.getWidth(), tot=0;
   doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('Materials in store',40,44);
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text('Buildtab by DK',W-40,44,{align:'right'}); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-40,58,{align:'right'});
+  doc.text(APP_NAME,W-40,44,{align:'right'}); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-40,58,{align:'right'});
   doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.text('Project:',40,70); doc.setFont('helvetica','normal'); doc.text(S.project||'',100,70);
   var body=S.materials.map(function(m){
     var b=boqOf(m),u=usedQty(m.id),rec=num(m.received);tot+=u*num(m.cost);
@@ -781,7 +773,7 @@ async function makeBoqPdf(){
   var I=S.boqInfo||{}, W=doc.internal.pageSize.getWidth(), y=44;
   doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text('Bill of Quantities',40,y);
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text('Buildtab by DK',W-40,y,{align:'right'}); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-40,y+14,{align:'right'});
+  doc.text(APP_NAME,W-40,y,{align:'right'}); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),W-40,y+14,{align:'right'});
   y+=26; doc.setFontSize(11);
   function trow(l,v){doc.setFont('helvetica','bold');doc.text(l,40,y);doc.setFont('helvetica','normal');var ls=doc.splitTextToSize(v||'',W-190);doc.text(ls.length?ls:[''],150,y);y+=16*Math.max(1,ls.length)}
   trow('Project:',S.project||''); trow('Title:',I.title||''); trow('BOQ consultant:',I.consultant||''); trow('Date:',I.date?fmtDate(I.date):'');
@@ -855,7 +847,7 @@ async function makePdf(){
   var D=sumData(), doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
   doc.setFontSize(18); doc.text((S.project||'Site project')+' – summary',40,40);
   doc.setFontSize(10); doc.text('Generated '+new Date().toLocaleDateString('en-GB'),40,56);
-  doc.text('Buildtab by DK',doc.internal.pageSize.getWidth()-40,40,{align:'right'});
+  doc.text(APP_NAME,doc.internal.pageSize.getWidth()-40,40,{align:'right'});
   var first=true;
   function tbl(title,head,body,foot){
     if(!body.length)return;
@@ -942,8 +934,7 @@ $('tabs').addEventListener('click',function(e){var b=e.target.closest('[data-tab
 
 $('v-proj').addEventListener('click',function(e){
   var t=e.target, ds=t.dataset;
-  if(t.id==='addsample'){addSample()}
-  else if(t.id==='addp'){var n=$('np').value.trim();if(n){var p=newProj(n);R.projects.push(p);switchProject(p.id)}}
+  if(t.id==='addp'){var n=$('np').value.trim();if(n){var p=newProj(n);R.projects.push(p);switchProject(p.id)}}
   else if(ds.open!==undefined){switchProject(R.projects[+ds.open].id)}
   else if(ds.delp!==undefined){pendingProj=R.projects[+ds.delp].id;drawProj()}
   else if(ds.cancelp!==undefined){pendingProj=null;drawProj()}
@@ -967,27 +958,88 @@ setSync('Saved on this device');
 function refreshAll(){drawBar(true);drawCal();drawDay();redraw()}
 (async function initCloud(){
   try{
-    if(!window.claude||!window.claude.use)return;
-    var db=await window.claude.use('db'), user=await window.claude.use('user');
-    if(!db||!user)return;
-    var id=await user.id(); if(!id)return;
-    var ref=db.doc('data/users/'+id+'/sitelog'), snap=await ref.get(), rem=0;
-    if(snap.exists){
-      var remote=JSON.parse(snap.data().json); rem=remote.savedAt||0;
+    var sb=window.sb; if(!sb)return;
+    var snap=await sb.from('sitelog').select('json,saved_at').eq('user_id',uid).maybeSingle();
+    if(snap.error)throw snap.error;
+    var rem=0, row=snap.data;
+    if(row){
+      var remote=JSON.parse(row.json); rem=remote.savedAt||0;
       if(rem>(R.savedAt||0)){loadRoot(remote);try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}sel=todayIso;refreshAll()}
     }
-    cloud.ref=ref;
-    if(!snap.exists||(R.savedAt||0)>rem){if(R.savedAt)cloudSave()}else setSync('All changes saved to your account');
-  }catch(e){}
+    cloud.ref={set:function(o){return sb.from('sitelog').upsert({user_id:uid,json:o.json,saved_at:o.savedAt}).then(function(r){if(r.error)throw r.error})}};
+    if(!row||(R.savedAt||0)>rem){if(R.savedAt)cloudSave()}else setSync('All changes saved to your account');
+  }catch(e){setSync('Saved on this device only (could not reach server)')}
 })();
-(async function initWho(){
+};
+</script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)}, cfg=window.BUILDTAB_CONFIG||{}, mode='in', started=false, recovering=/type=recovery/.test(location.hash);
+var hashErr=/error_description=([^&]*)/.exec(location.hash);
+var appName=cfg.APP_NAME||'Buildvita by DK'; document.title=appName; Array.prototype.forEach.call(document.querySelectorAll('.appname'),function(e){e.textContent=appName});
+// Replaces the Claude-only download feature with a normal browser download
+window.claude={use:async function(n){
+  if(n==='downloads')return {save:async function(o){var b=new Blob([o.data],{type:'application/pdf'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}};
+  if(n==='sample')return {
+    limits:async function(){return {images:{maxCount:2}}},
+    json:async function(prompt,o){
+      o=o||{}; var sig=o.signal;
+      if(sig&&sig.aborted)throw {code:'cancelled'};
+      var imgs=[]; for(var i=0;i<(o.images||[]).length;i++)imgs.push(await blobB64(o.images[i]));
+      var r; try{r=await window.sb.functions.invoke('read-boq',{body:{prompt:prompt,images:imgs,tier:o.modelTier==='quick'?'quick':'default'}})}catch(e){throw {code:'unavailable'}}
+      if(sig&&sig.aborted)throw {code:'cancelled'};
+      if(r.error)throw {code:'unavailable'};
+      var d=r.data; if(!d||!d.ok){if(d&&d.detail)console.error('read-boq:',d.detail);throw {code:(d&&d.code)||'refused'}}
+      if(d.truncated)throw {code:'invalid_json'};
+      return parseJson(d.text)}};
+  return null}};
+function blobB64(b){return new Promise(function(res,rej){var fr=new FileReader();fr.onload=function(){var x=String(fr.result);res({type:/^image[/]/.test(b.type||'')?b.type:'image/jpeg',data:x.slice(x.indexOf(',')+1)})};fr.onerror=function(){rej({code:'image_rejected'})};fr.readAsDataURL(b)})}
+function parseJson(t){t=String(t||'');var a=t.search(/[[{]/),z=Math.max(t.lastIndexOf('}'),t.lastIndexOf(']'));if(a<0||z<a)throw {code:'invalid_json'};try{return JSON.parse(t.slice(a,z+1))}catch(e){throw {code:'invalid_json'}}}
+function msg(t,ok){var e=$('amsg');e.textContent=t;e.style.color=ok?'var(--ok)':'var(--danger)'}
+function setMode(m){
+  mode=m; var r=m==='reset';
+  $('agoo').textContent=m==='in'?'Sign in':m==='up'?'Create account':'Save new password';
+  $('aswitch').textContent=m==='in'?'Create a new account':'I already have an account';
+  $('amode').textContent=m==='in'?'Sign in to open your site logs.':m==='up'?'Create your account.':'Choose a new password.';
+  $('aplabel').textContent=r?'New password (min 6 characters)':'Password (min 6 characters)';
+  $('apass').autocomplete=m==='in'?'current-password':'new-password';
+  $('aemailbox').hidden=r; $('aswitch').hidden=r; $('aforgot').hidden=(m!=='in'); msg('');
+}
+if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_URL.indexOf('YOUR-')>-1){msg('Setup not finished: put your Supabase URL and key in config.js');$('agoo').disabled=true;$('aforgot').hidden=true;return}
+var sb=window.sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+function start(session){if(started)return;started=true;document.body.classList.remove('locked');window.startBuildtab(session.user.id)}
+async function go(){
+  var email=$('aemail').value.trim(), pw=$('apass').value;
+  if((mode!=='reset'&&!email)||pw.length<6){msg(mode==='reset'?'Enter a new password of at least 6 characters.':'Enter your email and a password of at least 6 characters.');return}
+  $('agoo').disabled=true; msg('Please wait…',true);
   try{
-    if(!window.claude||!window.claude.use)return;
-    var u=await window.claude.use('user'); if(!u)return;
-    var me=await u.me(), el=$('who'); if(!el)return;
-    el.textContent=me.id?('Signed in as '+(me.name||'you')+'. This is your own private copy.'):'Not signed in. Data stays on this device only.';
-  }catch(e){}
-})();
+    if(mode==='reset'){
+      var u=await sb.auth.updateUser({password:pw}); if(u.error)throw u.error;
+      var g=await sb.auth.getSession(); recovering=false; history.replaceState(null,'',location.pathname);
+      if(g.data&&g.data.session)start(g.data.session); else{setMode('in');msg('Password updated. Please sign in.',true)}
+    }else if(mode==='in'){var r=await sb.auth.signInWithPassword({email:email,password:pw});if(r.error)throw r.error;start(r.data.session)}
+    else{var s=await sb.auth.signUp({email:email,password:pw});if(s.error)throw s.error;
+      if(s.data.session)start(s.data.session);else{msg('Account created. Check your email and click the confirmation link, then sign in.',true);setMode('in')}}
+  }catch(e){msg(e.message||'Something went wrong. Try again.')}
+  $('agoo').disabled=false;
+}
+async function forgot(){
+  var email=$('aemail').value.trim();
+  if(!email){msg('Type your email above first, then tap Forgot password.');return}
+  $('aforgot').disabled=true; msg('Please wait…',true);
+  try{
+    var r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname}); if(r.error)throw r.error;
+    msg('If that email has an account, a reset link is on its way. Open the link on this device.',true);
+  }catch(e){msg(e.message||'Could not send the reset email. Try again later.')}
+  $('aforgot').disabled=false;
+}
+$('agoo').onclick=go; $('aforgot').onclick=forgot; $('aswitch').onclick=function(){setMode(mode==='in'?'up':'in')};
+['aemail','apass'].forEach(function(id){$(id).addEventListener('keydown',function(e){if(e.key==='Enter')go()})});
+$('signout').onclick=async function(){await sb.auth.signOut();location.reload()};
+sb.auth.onAuthStateChange(function(ev){if(ev==='PASSWORD_RECOVERY'&&!started){recovering=true;setMode('reset')}});
+if(recovering)setMode('reset');
+else if(hashErr)msg(decodeURIComponent(hashErr[1].replace(/\+/g,' '))+'. Request a new reset link.');
+sb.auth.getSession().then(function(r){if(!recovering&&r.data&&r.data.session)start(r.data.session)});
 })();
 </script>
 </body>
