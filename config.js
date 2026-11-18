@@ -5,6 +5,6 @@ window.BUILDTAB_CONFIG = {
   // Change the text between the quotes to rename the app, then save/commit the file.
   APP_NAME: 'Buildvita by DK',
 
-  SUPABASE_URL: 'https://YOUR-PROJECT-ID.supabase.co',
-  SUPABASE_ANON_KEY: 'YOUR-ANON-OR-PUBLISHABLE-KEY'
+  SUPABASE_URL: 'https://aftojxdsabucorekzyql',
+  SUPABASE_ANON_KEY: 'sb_publishable_3VsDzkX0x6RlugJkT_svQA_zqsfflSx'
 };
